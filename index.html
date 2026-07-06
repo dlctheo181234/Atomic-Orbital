@@ -1,322 +1,438 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="a11y">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orbitales Atomiques</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root { --bg:#e8e8e5; --ink:#111; --sub:#888; --line:#d4d4d0; --accent:#111; }
+
+/* ── Thèmes : élégant (défaut :root) / accessible (html.a11y) ── */
+:root {
+  --bg:#e8e8e5; --ink:#111; --sub:#71716c; --line:#d4d4d0;
+  --focus:#0b57d0; --err:#a3271c;
+  --sidebar:280px;
+  --font-scale:1;
+  --ctl-pad:8px 10px;          /* padding des contrôles */
+  --btn-minh:34px;             /* hauteur mini des boutons */
+  --track-h:2px;               /* épaisseur piste des sliders */
+  --thumb:16px;                /* diamètre du curseur des sliders */
+  --border-w:1px;
+}
+html { font-size: calc(14px * var(--font-scale)); }
+
+html.a11y {
+  --sub:#4a4a45; --line:#a9a9a2;
+  --sidebar:380px;
+  --ctl-pad:12px 14px;
+  --btn-minh:48px;
+  --track-h:8px;
+  --thumb:28px;
+  --border-w:2px;
+  font-size: calc(17.5px * var(--font-scale));
+}
 
 html,body { height:100%; background:var(--bg); color:var(--ink); font-family:'DM Mono',monospace; }
-body { display:grid; grid-template-columns:270px 1fr; height:100vh; overflow:hidden; }
+body { display:grid; grid-template-columns:var(--sidebar) 1fr; height:100vh; overflow:hidden; }
+
+:focus-visible { outline:3px solid var(--focus); outline-offset:2px; border-radius:3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition:none !important; animation-duration:.01s !important; }
+}
 
 /* ── Sidebar ── */
 aside {
-  border-right:1px solid var(--line);
+  border-right:var(--border-w) solid var(--line);
   display:flex; flex-direction:column;
-  padding:28px 22px; overflow-y:auto; gap:0;
+  padding:26px 20px; overflow-y:auto; gap:0;
   background:var(--bg);
 }
-.title { font-family:'DM Serif Display',serif; font-size:18px; line-height:1.25; margin-bottom:3px; }
-.sub   { font-size:19px; color:var(--sub); letter-spacing:.14em; text-transform:uppercase; margin-bottom:30px; }
+.title { font-family:'DM Serif Display',serif; font-size:1.55rem; line-height:1.2; margin-bottom:4px; }
+.sub   { font-size:.8rem; color:var(--sub); letter-spacing:.12em; text-transform:uppercase; margin-bottom:24px; }
 
-.block { padding:16px 0; border-top:1px solid var(--line); }
-.lbl   { font-size:19px; text-transform:uppercase; letter-spacing:.15em; color:var(--sub); margin-bottom:10px; }
+.block { padding:16px 0; border-top:var(--border-w) solid var(--line); }
+.lbl   { display:block; font-size:.8rem; text-transform:uppercase; letter-spacing:.14em; color:var(--sub); margin-bottom:10px; font-weight:500; }
 
-/* Atom display */
+/* Cartes de sélection d'ion (vrais boutons) */
 .atom-card {
-  display:flex; align-items:center; gap:12px;
-  padding:10px 12px;
-  border:1px solid var(--line); border-radius:3px;
-  cursor:pointer; transition:border-color .13s;
-  user-select:none;
-  background:var(--bg);
+  display:flex; align-items:center; gap:12px; width:100%;
+  padding:var(--ctl-pad); min-height:var(--btn-minh);
+  border:var(--border-w) solid var(--line); border-radius:4px;
+  cursor:pointer; transition:border-color .13s, background .13s;
+  background:var(--bg); color:var(--ink);
+  font-family:inherit; text-align:left;
 }
 .atom-card:hover { border-color:var(--ink); }
+.atom-card[aria-pressed="true"] { border-color:var(--ink); background:#dededa; box-shadow:inset 0 0 0 1px var(--ink); }
 .atom-symbol {
-  font-family:'DM Serif Display',serif; font-size:26px;
-  line-height:1; min-width:36px; text-align:center;
+  font-family:'DM Serif Display',serif; font-size:1.7rem;
+  line-height:1; min-width:2.4em; text-align:center;
 }
 .atom-info { display:flex; flex-direction:column; gap:2px; }
-.atom-name  { font-size:17px; }
-.atom-Z     { font-size:19px; color:var(--sub); }
-.atom-config { font-size:19px; color:var(--sub); margin-top:4px; line-height:1.5; }
+.atom-name  { font-size:1rem; }
+.atom-Z     { font-size:.85rem; color:var(--sub); }
 
-/* Orbitals tags */
-.orb-tags { display:flex; flex-wrap:wrap; gap:5px; }
+/* Sélecteur d'orbitales (vrais boutons) */
+.orb-tags { display:flex; flex-wrap:wrap; gap:6px; }
 .orb-tag {
-  font-size:13px; padding:3px 19px;
-  border:1px solid var(--line); border-radius:2px;
-  display:flex; align-items:center; gap:5px;
+  font-size:.95rem; padding:var(--ctl-pad); min-height:var(--btn-minh);
+  border:var(--border-w) solid var(--line); border-radius:4px;
+  display:flex; align-items:center; gap:7px;
+  cursor:pointer; background:transparent; color:var(--ink);
+  font-family:inherit; transition:border-color .13s, background .13s;
 }
-.orb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.orb-tag:hover { border-color:var(--ink); }
+.orb-dot { width:.7em; height:.7em; border-radius:50%; flex-shrink:0; }
 
-/* Slider */
-.sr { display:flex; justify-content:space-between; font-size:19px; color:var(--sub); margin-bottom:7px; }
-.sr strong { color:var(--ink); font-weight:400; }
+/* Sliders */
+.sr { display:flex; justify-content:space-between; font-size:.85rem; color:var(--sub); margin-bottom:8px; }
+.sr strong { color:var(--ink); font-weight:500; font-size:1rem; }
 input[type=range] {
-  -webkit-appearance:none; width:100%; height:1px;
-  background:var(--line); outline:none; cursor:pointer;
+  -webkit-appearance:none; appearance:none; width:100%; height:var(--track-h);
+  background:var(--line); outline-offset:6px; cursor:pointer; border-radius:99px;
+  margin:calc(var(--thumb)/2) 0;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none; width:19px; height:19px; background:var(--ink); border-radius:50%;
+  -webkit-appearance:none; width:var(--thumb); height:var(--thumb);
+  background:var(--ink); border-radius:50%; border:none;
 }
-
-/* Legend */
-.legend-bar { width:100%; height:5px; border-radius:3px; background:linear-gradient(to right,#1a237e,#1565c0,#00897b,#f9a825,#e53935); }
-.legend-labels { display:flex; justify-content:space-between; font-size:15px; color:var(--sub); margin-top:3px; }
-
-/* URL */
-.url-inp {
-  width:100%; border:1px solid var(--line); background:transparent;
-  color:var(--ink); font-family:'DM Mono',monospace; font-size:19px;
-  padding:6px 8px; border-radius:2px; outline:none;
+input[type=range]::-moz-range-thumb {
+  width:var(--thumb); height:var(--thumb);
+  background:var(--ink); border-radius:50%; border:none;
 }
-.url-inp:focus { border-color:var(--ink); }
+input[type=range]::-moz-range-track { height:var(--track-h); background:var(--line); border-radius:99px; }
+
+/* Légende */
+.legend-bar { width:100%; height:8px; border-radius:4px; background:linear-gradient(to right,#1a237e,#1565c0,#00897b,#f9a825,#e53935); }
+.legend-labels { display:flex; justify-content:space-between; font-size:.85rem; color:var(--sub); margin-top:4px; }
+.legend-psi { display:flex; gap:14px; align-items:center; font-size:.9rem; color:var(--sub); flex-wrap:wrap; }
+.legend-psi > div { display:flex; align-items:center; gap:5px; }
 
 /* Stats */
 .stats { display:grid; grid-template-columns:1fr 1fr; }
 .stat { padding:8px 0 5px; border-top:1px solid var(--line); }
-.stat .v { font-family:'DM Serif Display',serif; font-size:16px; line-height:1; }
-.stat .l { font-size:12px; color:var(--sub); text-transform:uppercase; letter-spacing:.12em; margin-top:2px; }
+.stat .v { font-family:'DM Serif Display',serif; font-size:1.25rem; line-height:1; }
+.stat .l { font-size:.75rem; color:var(--sub); text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
 
-/* Histo */
-.histo { display:flex; flex-direction:column; gap:4px; }
-.hr { display:grid; grid-template-columns:50px 1fr 26px; align-items:center; gap:7px; font-size:17px; color:var(--sub); }
-.bb { height:1px; background:var(--line); overflow:hidden; }
-.bf { height:100%; background:var(--ink); transition:width .6s cubic-bezier(.4,0,.2,1); }
-.hn { text-align:right; color:var(--ink); }
-
-/* Layer visibility toggles */
-.layer-row {
-  display:flex; align-items:center; gap:8px;
-  padding:5px 8px; border:1px solid var(--line); border-radius:2px;
-  cursor:pointer; transition:all .13s; user-select:none;
-}
-.layer-row:hover { border-color:var(--ink); }
-.layer-row.hidden-layer { opacity:.38; }
-.layer-check {
-  width:12px; height:12px; border:1px solid currentColor;
-  border-radius:2px; display:flex; align-items:center; justify-content:center;
-  flex-shrink:0; font-size:19px;
-}
-.layer-name { font-size:19px; flex:1; }
-.layer-count { font-size:19px; color:var(--sub); }
-.foot { margin-top:auto; padding-top:20px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:6px; }
+/* Boutons principaux */
+.foot { margin-top:auto; padding-top:20px; border-top:var(--border-w) solid var(--line); display:flex; flex-direction:column; gap:8px; }
 .btn-main {
-  width:100%; background:var(--ink); color:#fff; border:none;
-  font-family:'DM Mono',monospace; font-size:14px; letter-spacing:.12em;
-  text-transform:uppercase; padding:11px; cursor:pointer; border-radius:2px; transition:opacity .13s;
+  width:100%; min-height:var(--btn-minh); background:var(--ink); color:#fff; border:var(--border-w) solid var(--ink);
+  font-family:inherit; font-size:1.05rem; letter-spacing:.1em;
+  text-transform:uppercase; padding:var(--ctl-pad); cursor:pointer; border-radius:4px; transition:opacity .13s;
 }
-.btn-main:hover { opacity:.7; }
-.btn-main:disabled { opacity:.25; cursor:not-allowed; }
+.btn-main:hover { opacity:.75; }
+.btn-main:disabled { opacity:.35; cursor:not-allowed; }
 .btn-sec {
-  width:100%; background:transparent; color:var(--ink);
-  border:1px solid var(--line); font-family:'DM Mono',monospace;
-  font-size:19px; letter-spacing:.12em; text-transform:uppercase;
-  padding:10px; cursor:pointer; border-radius:2px; transition:all .13s;
-  display:flex; align-items:center; justify-content:center; gap:7px;
+  width:100%; min-height:var(--btn-minh); background:transparent; color:var(--ink);
+  border:var(--border-w) solid var(--line); font-family:inherit;
+  font-size:.95rem; letter-spacing:.1em; text-transform:uppercase;
+  padding:var(--ctl-pad); cursor:pointer; border-radius:4px; transition:all .13s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
 }
 .btn-sec:hover { border-color:var(--ink); }
-.btn-sec.active { background:var(--ink); color:#fff; border-color:var(--ink); }
-.btn-sec:disabled { opacity:.25; cursor:not-allowed; }
+.btn-sec.active, .btn-sec[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+.btn-sec:disabled { opacity:.35; cursor:not-allowed; }
 #coupe-block { display:none; }
 #coupe-block.visible { display:block; }
-.err { margin-top:2px; font-size:19px; color:#b0291e; line-height:1.55; display:none; }
+.err { margin-top:4px; font-size:.95rem; color:var(--err); line-height:1.5; display:none; }
 
-/* ── Canvas area ── */
+/* ── Zone canvas ── */
 main { position:relative; overflow:hidden; }
-#c { width:100%; height:100%; display:block; }
+#c { width:100%; height:100%; display:block; touch-action:none; }
 #loader {
   position:absolute; inset:0; background:rgba(232,232,229,.88);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
-  font-size:19px; letter-spacing:.15em; text-transform:uppercase; color:var(--sub);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  font-size:1rem; letter-spacing:.14em; text-transform:uppercase; color:var(--sub);
   transition:opacity .25s;
 }
 #loader.hidden { opacity:0; pointer-events:none; }
 .spinner {
-  width:20px; height:20px; border:1.5px solid var(--line);
+  width:24px; height:24px; border:2px solid var(--line);
   border-top-color:var(--ink); border-radius:50%;
   animation:spin .7s linear infinite;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
-.hint { position:absolute; bottom:14px; right:16px; font-size:19px; letter-spacing:.1em; text-transform:uppercase; color:#b0b0aa; pointer-events:none; }
-.badge { position:absolute; top:16px; left:16px; font-family:'DM Serif Display',serif; font-style:italic; font-size:28px; color:#d4d4cf; pointer-events:none; display:none; }
+.hint { position:absolute; bottom:14px; right:16px; font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); pointer-events:none; background:rgba(232,232,229,.8); padding:4px 8px; border-radius:3px; }
+.badge { position:absolute; top:16px; left:16px; font-family:'DM Serif Display',serif; font-style:italic; font-size:2rem; color:var(--sub); pointer-events:none; display:none; }
 
-/* ── Tableau button (top-right of canvas) ── */
-#btn-tableau {
-  position:absolute; top:16px; right:16px;
-  background:var(--bg); border:1px solid var(--line); color:var(--ink);
-  font-family:'DM Mono',monospace; font-size:19px; letter-spacing:.12em;
-  text-transform:uppercase; padding:7px 13px; cursor:pointer;
-  border-radius:2px; transition:all .13s; z-index:5;
+/* ── Bouton et panneau Paramètres ── */
+#btn-settings {
+  position:absolute; top:14px; right:14px;
+  background:var(--bg); border:var(--border-w) solid var(--line); color:var(--ink);
+  font-family:inherit; font-size:.95rem; letter-spacing:.08em;
+  text-transform:uppercase; padding:var(--ctl-pad); min-height:var(--btn-minh);
+  cursor:pointer; border-radius:4px; transition:border-color .13s; z-index:5;
+  display:flex; align-items:center; gap:7px;
 }
-#btn-tableau:hover { border-color:var(--ink); }
+#btn-settings:hover { border-color:var(--ink); }
 
-/* ── Periodic table overlay ── */
-#overlay {
-  position:absolute; inset:0; background:rgba(232,232,229,.97);
-  display:none; flex-direction:column;
-  padding:28px 24px; z-index:20; overflow:auto;
+#settings {
+  position:absolute; top:14px; right:14px;
+  width:min(400px, calc(100% - 28px));
+  background:var(--bg); border:var(--border-w) solid var(--ink); border-radius:6px;
+  padding:20px; z-index:30;
+  display:flex; flex-direction:column; gap:18px;
+  box-shadow:0 6px 30px rgba(0,0,0,.18);
 }
-#overlay.open { display:flex; }
-.overlay-header {
-  display:flex; align-items:baseline; justify-content:space-between;
-  margin-bottom:20px;
+#settings[hidden] { display:none; }
+.settings-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.settings-title { font-family:'DM Serif Display',serif; font-size:1.3rem; }
+#settings-close {
+  background:transparent; border:var(--border-w) solid var(--line); cursor:pointer;
+  font-size:1.1rem; color:var(--ink); line-height:1; border-radius:4px;
+  min-width:var(--btn-minh); min-height:var(--btn-minh);
+  display:flex; align-items:center; justify-content:center; font-family:inherit;
 }
-.overlay-title { font-family:'DM Serif Display',serif; font-size:17px; }
-.overlay-sub   { font-size:19px; color:var(--sub); letter-spacing:.12em; text-transform:uppercase; }
-#btn-close {
+#settings-close:hover { border-color:var(--ink); }
+
+.setting-row { display:flex; flex-direction:column; gap:8px; padding-top:14px; border-top:1px solid var(--line); }
+.setting-name { font-size:1rem; font-weight:500; }
+.setting-desc { font-size:.85rem; color:var(--sub); line-height:1.5; }
+
+/* Interrupteur accessible/élégant */
+.switch {
+  display:flex; align-items:center; gap:12px;
   background:transparent; border:none; cursor:pointer;
-  font-size:18px; color:var(--sub); line-height:1; padding:2px 4px;
+  font-family:inherit; font-size:1rem; color:var(--ink); padding:6px 0;
+  min-height:var(--btn-minh); text-align:left;
 }
-#btn-close:hover { color:var(--ink); }
-
-/* Periodic table grid */
-.pt-grid {
-  display:grid;
-  grid-template-columns: repeat(18, 1fr);
-  gap:4px;
-  max-width:900px;
+.switch-track {
+  width:3.4em; height:1.9em; border-radius:99px; flex-shrink:0;
+  background:#b4b4ae; border:var(--border-w) solid var(--sub);
+  position:relative; transition:background .15s;
 }
-.pt-cell {
-  aspect-ratio:1;
-  border:1px solid var(--line);
-  border-radius:2px;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  cursor:pointer; transition:all .13s;
-  padding:2px;
-  min-width:0;
-  background:var(--bg);
+.switch[aria-checked="true"] .switch-track { background:var(--ink); border-color:var(--ink); }
+.switch-knob {
+  position:absolute; top:50%; left:.18em; transform:translateY(-50%);
+  width:1.4em; height:1.4em; border-radius:50%; background:#fff;
+  transition:left .15s;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);
 }
-.pt-cell:hover { border-color:var(--ink); background:#dededb; }
-.pt-cell.selected { background:var(--ink); border-color:var(--ink); color:#fff; }
-.pt-cell.empty { border-color:transparent; cursor:default; pointer-events:none; }
-.pt-z    { font-size:17px; color:var(--sub); line-height:1; align-self:flex-start; padding-left:2px; }
-.pt-sym  { font-family:'DM Serif Display',serif; font-size:13px; line-height:1.1; }
-.pt-cell.selected .pt-z { color:rgba(255,255,255,.6); }
-.pt-name { font-size:11px; color:var(--sub); text-align:center; line-height:1; margin-top:1px; overflow:hidden; white-space:nowrap; }
-.pt-cell.selected .pt-name { color:rgba(255,255,255,.6); }
+.switch[aria-checked="true"] .switch-knob { left:calc(100% - 1.58em); }
+.switch-state { font-weight:500; }
 
-.pt-legend { display:flex; gap:16px; margin-top:16px; flex-wrap:wrap; }
-.pt-legend-item { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--sub); }
-.pt-legend-dot  { width:8px; height:8px; border-radius:50%; }
-
-/* Orbital color palette */
-.c-1s  { background:#3b82f6; }
-.c-2s  { background:#10b981; }
-.c-2pz { background:#f59e0b; }
-.c-3s  { background:#ef4444; }
-.c-3pz { background:#8b5cf6; }
+/* Contrôle taille du texte */
+.font-ctl { display:flex; align-items:center; gap:10px; }
+.font-ctl button {
+  min-width:var(--btn-minh); min-height:var(--btn-minh);
+  background:transparent; border:var(--border-w) solid var(--line); border-radius:4px;
+  font-family:inherit; font-size:1.1rem; color:var(--ink); cursor:pointer;
+}
+.font-ctl button:hover { border-color:var(--ink); }
+.font-ctl button:disabled { opacity:.35; cursor:not-allowed; }
+#fs-val { min-width:4.5em; text-align:center; font-size:1rem; }
+#fs-reset {
+  align-self:flex-start; background:transparent; border:var(--border-w) solid var(--line);
+  border-radius:4px; font-family:inherit; font-size:.9rem; color:var(--ink);
+  padding:var(--ctl-pad); min-height:var(--btn-minh); cursor:pointer;
+}
+#fs-reset:hover { border-color:var(--ink); }
 </style>
 </head>
 <body>
 
-<aside>
-  <div class="title">Orbitales<br>Atomiques</div>
-  <div class="sub">Systèmes hydrogénoïdes (1 électron)</div>
+<aside aria-label="Panneau de contrôle">
+  <h1 class="title">Orbitales<br>Atomiques</h1>
+  <p class="sub">Systèmes hydrogénoïdes (1 électron)</p>
 
-  <!-- Ion selector -->
-  <div class="block">
-    <div class="lbl">Système</div>
-    <div style="display:flex;flex-direction:column;gap:5px" id="ion-btns">
-      <div class="atom-card" id="ion-1" onclick="selectIon(1)">
-        <div class="atom-symbol">H</div>
-        <div class="atom-info">
-          <div class="atom-name">Hydrogène</div>
-          <div class="atom-Z">Z = 1 · neutre</div>
-        </div>
-      </div>
-      <div class="atom-card" id="ion-2" onclick="selectIon(2)">
-        <div class="atom-symbol">He⁺</div>
-        <div class="atom-info">
-          <div class="atom-name">Hélium ionisé</div>
-          <div class="atom-Z">Z = 2 · +1</div>
-        </div>
-      </div>
-      <div class="atom-card" id="ion-3" onclick="selectIon(3)">
-        <div class="atom-symbol">Li²⁺</div>
-        <div class="atom-info">
-          <div class="atom-name">Lithium doublement ionisé</div>
-          <div class="atom-Z">Z = 3 · +2</div>
-        </div>
-      </div>
+  <!-- Sélecteur d'ion -->
+  <section class="block">
+    <span class="lbl" id="lbl-ion">Système</span>
+    <div style="display:flex;flex-direction:column;gap:6px" id="ion-btns" role="group" aria-labelledby="lbl-ion">
+      <button type="button" class="atom-card" id="ion-1" aria-pressed="true">
+        <span class="atom-symbol" aria-hidden="true">H</span>
+        <span class="atom-info">
+          <span class="atom-name">Hydrogène</span>
+          <span class="atom-Z">Z = 1 · neutre</span>
+        </span>
+      </button>
+      <button type="button" class="atom-card" id="ion-2" aria-pressed="false">
+        <span class="atom-symbol" aria-hidden="true">He⁺</span>
+        <span class="atom-info">
+          <span class="atom-name">Hélium ionisé</span>
+          <span class="atom-Z">Z = 2 · +1</span>
+        </span>
+      </button>
+      <button type="button" class="atom-card" id="ion-3" aria-pressed="false">
+        <span class="atom-symbol" aria-hidden="true">Li²⁺</span>
+        <span class="atom-info">
+          <span class="atom-name">Lithium doublement ionisé</span>
+          <span class="atom-Z">Z = 3 · +2</span>
+        </span>
+      </button>
     </div>
-  </div>
+  </section>
 
-  <!-- Orbitale selector -->
-  <div class="block">
-    <div class="lbl">Orbitale</div>
-    <div class="orb-tags" id="orb-select-tags"></div>
-  </div>
+  <!-- Sélecteur d'orbitales -->
+  <section class="block">
+    <span class="lbl" id="lbl-orb">Orbitales affichées</span>
+    <div class="orb-tags" id="orb-select-tags" role="group" aria-labelledby="lbl-orb"></div>
+  </section>
 
-  <!-- Points -->
-  <div class="block">
-    <div class="lbl">Nombre de points</div>
-    <div class="sr"><span>200</span><strong id="nv">1 500</strong><span>8 000</span></div>
-    <input type="range" id="ns" min="200" max="8000" step="100" value="1500">
-  </div>
+  <!-- Nombre de points -->
+  <section class="block">
+    <label class="lbl" for="ns">Nombre de points</label>
+    <div class="sr" aria-hidden="true"><span>200</span><strong id="nv">1 500</strong><span>8 000</span></div>
+    <input type="range" id="ns" min="200" max="8000" step="100" value="1500"
+           aria-describedby="nv">
+  </section>
 
-  <!-- Color mode toggle + legend -->
-  <div class="block">
-    <div class="lbl">Mode de couleur</div>
-    <div style="display:flex;gap:5px;margin-bottom:10px">
-      <button class="btn-sec active" id="btn-color-dist" onclick="setColorMode('distance')" style="flex:1;padding:7px 4px;font-size:19px">
-        ◉ Distance
-      </button>
-      <button class="btn-sec" id="btn-color-layer" onclick="setColorMode('layer')" style="flex:1;padding:7px 4px;font-size:19px">
-        ○ Signe ψ
-      </button>
+  <!-- Mode de couleur + légende -->
+  <section class="block">
+    <span class="lbl" id="lbl-color">Mode de couleur</span>
+    <div style="display:flex;gap:6px;margin-bottom:12px" role="group" aria-labelledby="lbl-color">
+      <button type="button" class="btn-sec" id="btn-color-dist" aria-pressed="true" style="flex:1">Distance</button>
+      <button type="button" class="btn-sec" id="btn-color-layer" aria-pressed="false" style="flex:1">Signe ψ</button>
     </div>
     <div id="legend-distance">
-      <div class="legend-bar"></div>
+      <div class="legend-bar" role="img" aria-label="Dégradé de couleur : bleu (proche du noyau) vers rouge (loin du noyau)"></div>
       <div class="legend-labels"><span>proche</span><span>loin</span></div>
     </div>
-    <div id="legend-layer" style="display:none">
-      <div style="display:flex;gap:8px;align-items:center;font-size:19px;color:var(--sub)">
-        <div style="display:flex;align-items:center;gap:4px"><div class="orb-dot" style="background:#E63333"></div>ψ &gt; 0</div>
-        <div style="display:flex;align-items:center;gap:4px"><div class="orb-dot" style="background:#265AF2"></div>ψ &lt; 0</div>
-      </div>
+    <div id="legend-layer" class="legend-psi" style="display:none">
+      <div><span class="orb-dot" style="background:#E63333"></span>ψ &gt; 0</div>
+      <div><span class="orb-dot" style="background:#265AF2"></span>ψ &lt; 0</div>
     </div>
-  </div>
+  </section>
 
   <!-- Stats -->
-  <div class="block" id="sb" style="display:none">
-    <div class="lbl">Résultats</div>
+  <section class="block" id="sb" style="display:none" aria-live="polite">
+    <span class="lbl">Résultats</span>
     <div class="stats">
       <div class="stat"><div class="v" id="sp">–</div><div class="l">points</div></div>
       <div class="stat"><div class="v" id="sm">–</div><div class="l">ms</div></div>
     </div>
-  </div>
+  </section>
 
   <div class="foot">
-    <button class="btn-main" id="btn">Générer</button>
-    <button class="btn-sec" id="btn-coupe" disabled>
-      <span id="coupe-icon">⊘</span> Coupe transversale
+    <button type="button" class="btn-main" id="btn">Générer</button>
+    <button type="button" class="btn-sec" id="btn-coupe" aria-pressed="false" disabled>
+      <span id="coupe-icon" aria-hidden="true">⊘</span> Coupe transversale
     </button>
     <div id="coupe-block">
-      <div class="sr" style="margin-top:7px"><span>plan z =</span><strong id="coupe-val">0.0</strong><span> a₀</span></div>
-      <input type="range" id="coupe-slider" min="-5" max="5" step="0.1" value="0">
+      <label class="sr" for="coupe-slider" style="margin-top:8px">
+        <span>plan z =</span><strong id="coupe-val">0.0</strong><span>a₀</span>
+      </label>
+      <input type="range" id="coupe-slider" min="-20" max="20" step="0.1" value="0">
     </div>
-    <div class="err" id="err"></div>
+    <p class="err" id="err" role="alert"></p>
   </div>
 </aside>
 
 <main>
-  <canvas id="c"></canvas>
-  <div id="loader" class="hidden">
-    <div class="spinner"></div>
+  <canvas id="c" tabindex="0"
+          aria-label="Vue 3D des orbitales. Glisser pour tourner, molette pour zoomer. Au clavier : flèches pour tourner, + et − pour zoomer."></canvas>
+  <div id="loader" class="hidden" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
     <span id="loader-txt">Calcul en cours…</span>
   </div>
-  <div class="hint">clic : rotation · molette : zoom</div>
-  <div class="badge" id="badge"></div>
+  <div class="hint" aria-hidden="true">glisser : rotation · molette : zoom · flèches / + − : clavier</div>
+  <div class="badge" id="badge" aria-hidden="true"></div>
+
+  <button type="button" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
+    <span aria-hidden="true">⚙</span> Paramètres
+  </button>
+
+  <div id="settings" role="dialog" aria-labelledby="settings-title" hidden>
+    <div class="settings-header">
+      <h2 class="settings-title" id="settings-title">Paramètres d'affichage</h2>
+      <button type="button" id="settings-close" aria-label="Fermer les paramètres">✕</button>
+    </div>
+
+    <div class="setting-row" style="border-top:none;padding-top:0">
+      <span class="setting-name" id="mode-name">Mode accessible</span>
+      <span class="setting-desc">Activé (par défaut) : gros boutons, textes agrandis, contrastes renforcés.
+        Désactivé : mode élégant, interface compacte d'origine.</span>
+      <button type="button" class="switch" id="a11y-switch" role="switch" aria-checked="true" aria-labelledby="mode-name switch-state">
+        <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+        <span class="switch-state" id="switch-state">Accessible</span>
+      </button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-name" id="fs-name">Taille du texte</span>
+      <div class="font-ctl" role="group" aria-labelledby="fs-name">
+        <button type="button" id="fs-minus" aria-label="Réduire la taille du texte">A−</button>
+        <span id="fs-val" aria-live="polite">100 %</span>
+        <button type="button" id="fs-plus" aria-label="Augmenter la taille du texte">A+</button>
+      </div>
+      <button type="button" id="fs-reset">Réinitialiser l'affichage</button>
+    </div>
+  </div>
 </main>
 
 <script>
+// ── Paramètres d'accessibilité ────────────────────────────────────────────────
+const SETTINGS_KEY = 'orbitales-settings';
+const FS_MIN = 0.8, FS_MAX = 1.6, FS_STEP = 0.1;
+let settings = { a11y: true, fontScale: 1 };
+
+try {
+  const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+  if (saved && typeof saved === 'object') {
+    if (typeof saved.a11y === 'boolean') settings.a11y = saved.a11y;
+    if (typeof saved.fontScale === 'number') settings.fontScale = Math.min(FS_MAX, Math.max(FS_MIN, saved.fontScale));
+  }
+} catch (e) { /* stockage indisponible : valeurs par défaut */ }
+
+function applySettings() {
+  document.documentElement.classList.toggle('a11y', settings.a11y);
+  document.documentElement.style.setProperty('--font-scale', settings.fontScale);
+
+  const sw = document.getElementById('a11y-switch');
+  sw.setAttribute('aria-checked', String(settings.a11y));
+  document.getElementById('switch-state').textContent = settings.a11y ? 'Accessible' : 'Élégant';
+
+  const pct = Math.round(settings.fontScale * 100);
+  document.getElementById('fs-val').textContent = pct + ' %';
+  document.getElementById('fs-minus').disabled = settings.fontScale <= FS_MIN + 1e-9;
+  document.getElementById('fs-plus').disabled  = settings.fontScale >= FS_MAX - 1e-9;
+
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+}
+
+// Ouverture / fermeture du panneau
+const btnSettings = document.getElementById('btn-settings');
+const settingsPanel = document.getElementById('settings');
+
+function openSettings() {
+  settingsPanel.hidden = false;
+  btnSettings.setAttribute('aria-expanded', 'true');
+  document.getElementById('settings-close').focus();
+}
+function closeSettings() {
+  settingsPanel.hidden = true;
+  btnSettings.setAttribute('aria-expanded', 'false');
+  btnSettings.focus();
+}
+btnSettings.addEventListener('click', () => settingsPanel.hidden ? openSettings() : closeSettings());
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !settingsPanel.hidden) closeSettings();
+});
+
+document.getElementById('a11y-switch').addEventListener('click', () => {
+  settings.a11y = !settings.a11y;
+  applySettings();
+});
+document.getElementById('fs-minus').addEventListener('click', () => {
+  settings.fontScale = Math.max(FS_MIN, Math.round((settings.fontScale - FS_STEP) * 10) / 10);
+  applySettings();
+});
+document.getElementById('fs-plus').addEventListener('click', () => {
+  settings.fontScale = Math.min(FS_MAX, Math.round((settings.fontScale + FS_STEP) * 10) / 10);
+  applySettings();
+});
+document.getElementById('fs-reset').addEventListener('click', () => {
+  settings = { a11y: true, fontScale: 1 };
+  applySettings();
+});
+
+applySettings();
+
 // ── Three.js ──────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -324,107 +440,92 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setClearColor(0xe8e8e5, 1);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 1e-14, 1e-7);
-let sph = { theta:0.5, phi:1.1, r:4e-10 };
+const camera = new THREE.PerspectiveCamera(45, 1, 1e-13, 1e-7);
+const R_MIN = 3e-11, R_MAX = 5e-8; // bornes de zoom (évite de sortir des plans near/far)
+let sph = { theta: 0.5, phi: 1.1, r: 4e-10 };
 function camUpdate() {
   camera.position.set(
-    sph.r*Math.sin(sph.phi)*Math.sin(sph.theta),
-    sph.r*Math.cos(sph.phi),
-    sph.r*Math.sin(sph.phi)*Math.cos(sph.theta)
+    sph.r * Math.sin(sph.phi) * Math.sin(sph.theta),
+    sph.r * Math.cos(sph.phi),
+    sph.r * Math.sin(sph.phi) * Math.cos(sph.theta)
   );
-  camera.lookAt(0,0,0);
+  camera.lookAt(0, 0, 0);
 }
 camUpdate();
 
-// Nucleus
+// Noyau
 scene.add(new THREE.Mesh(
-  new THREE.SphereGeometry(4e-12,12,12),
-  new THREE.MeshBasicMaterial({color:0x222222})
+  new THREE.SphereGeometry(4e-12, 12, 12),
+  new THREE.MeshBasicMaterial({ color: 0x222222 })
 ));
 // Axes
-[[new THREE.Vector3(3e-10,0,0)],[new THREE.Vector3(0,3e-10,0)],[new THREE.Vector3(0,0,3e-10)]].forEach(([v])=>{
-  const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),v]);
-  scene.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0xc4c4c0})));
+[new THREE.Vector3(3e-10,0,0), new THREE.Vector3(0,3e-10,0), new THREE.Vector3(0,0,3e-10)].forEach(v => {
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), v]);
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xc4c4c0 })));
 });
 
-// Color gradient (blue→teal→amber→red by distance)
+// Dégradé par distance (bleu→turquoise→ambre→rouge)
 function distColor(t) {
-  const stops=[[0.102,0.137,0.494],[0.086,0.396,0.753],[0.000,0.537,0.482],[0.976,0.659,0.145],[0.898,0.224,0.208]];
-  const s=t*(stops.length-1), i=Math.min(Math.floor(s),stops.length-2), f=s-i;
-  const a=stops[i],b=stops[i+1];
+  const stops = [[0.102,0.137,0.494],[0.086,0.396,0.753],[0.000,0.537,0.482],[0.976,0.659,0.145],[0.898,0.224,0.208]];
+  const s = t * (stops.length - 1), i = Math.min(Math.floor(s), stops.length - 2), f = s - i;
+  const a = stops[i], b = stops[i+1];
   return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
 }
 
-// Per-orbital tint colors (subtle hue shift on top of distance gradient)
+// Teinte propre à chaque orbitale (mélangée au dégradé de distance)
 const ORB_TINT = {
   '1s':  [0.23, 0.51, 1.0],
   '2s':  [0.06, 0.73, 0.51],
+  '3s':  [0.94, 0.27, 0.27],
   '2pz': [0.96, 0.62, 0.17],
   '2px': [1.0,  0.42, 0.42],
   '2py': [0.65, 0.54, 0.98],
-  '3s':  [0.94, 0.27, 0.27],
-  '3pz': [0.55, 0.36, 0.96],
 };
-const ORB_CSS = { '1s':'#0061FF','2s':'#00FFA9','2pz':'#FFA000','2px':'#FF6B6B','2py':'#A78BFA','3s':'#FF0000','3pz':'#824FFF' };
+const ORB_CSS = { '1s':'#0061FF','2s':'#008F5E','3s':'#D42B2B','2pz':'#B36F00','2px':'#D14545','2py':'#6D4FD4' };
 
-// Store all point clouds per orbital
 let meshes = [];
-let allData = []; // [{positions, z, r_norm, orbital}]
+let allData = []; // [{positions, zArr, colorsDist, colorsLayer, orbital}]
 let coupeActive = false, coupeZ = 0;
-window._a0 = 5.29e-11;
 let colorMode = 'distance'; // 'distance' | 'layer'
 
 function setColorMode(mode) {
   colorMode = mode;
-  document.getElementById('btn-color-dist').classList.toggle('active', mode==='distance');
-  document.getElementById('btn-color-layer').classList.toggle('active', mode==='layer');
-  document.getElementById('legend-distance').style.display = mode==='distance' ? '' : 'none';
-  document.getElementById('legend-layer').style.display    = mode==='layer'    ? '' : 'none';
+  document.getElementById('btn-color-dist').setAttribute('aria-pressed', String(mode === 'distance'));
+  document.getElementById('btn-color-layer').setAttribute('aria-pressed', String(mode === 'layer'));
+  document.getElementById('legend-distance').style.display = mode === 'distance' ? '' : 'none';
+  document.getElementById('legend-layer').style.display    = mode === 'layer'    ? 'flex' : 'none';
   renderAll();
 }
-
-// Layer visibility state: orbital key → boolean
-let layerVisible = {};
-
-function buildLayerToggles() {} // non utilisé
-function updateAllBtn() {}
-function toggleAllLayers() {}
-function updateLayerLegend() {
-  // legend-layer shows psi sign colors — no dynamic update needed
-}
+document.getElementById('btn-color-dist').addEventListener('click', () => setColorMode('distance'));
+document.getElementById('btn-color-layer').addEventListener('click', () => setColorMode('layer'));
 
 function clearMeshes() {
   meshes.forEach(m => { scene.remove(m); m.geometry.dispose(); });
-  meshes = []; allData = []; layerVisible = {};
+  meshes = []; allData = [];
 }
 
 function buildOrbitalCloud(data, orbitalKey) {
   const n = data.x.length;
-  const positions  = new Float32Array(n*3);
-  const colorsDist = new Float32Array(n*3);
-  const colorsLayer= new Float32Array(n*3);
-  const zArr       = new Float32Array(n);
+  const positions   = new Float32Array(n*3);
+  const colorsDist  = new Float32Array(n*3);
+  const colorsLayer = new Float32Array(n*3);
+  const zArr        = new Float32Array(n);
 
-  const tint = ORB_TINT[orbitalKey] || [0.5,0.5,0.5];
-  // Solid layer color from ORB_CSS hex → RGB
-  const hex = ORB_CSS[orbitalKey] || '#888888';
-  const lr = parseInt(hex.slice(1,3),16)/255;
-  const lg = parseInt(hex.slice(3,5),16)/255;
-  const lb = parseInt(hex.slice(5,7),16)/255;
+  const tint = ORB_TINT[orbitalKey] || [0.5, 0.5, 0.5];
 
-  for (let i=0; i<n; i++) {
-    positions[i*3]  =data.x[i]; positions[i*3+1]=data.y[i]; positions[i*3+2]=data.z[i];
-    zArr[i]=data.z[i];
-    // Distance gradient with orbital tint (70% gradient, 30% tint)
-    const [dr,dg,db]=distColor(data.r_norm[i]);
-    colorsDist[i*3]  =dr*0.7+tint[0]*0.3;
-    colorsDist[i*3+1]=dg*0.7+tint[1]*0.3;
-    colorsDist[i*3+2]=db*0.7+tint[2]*0.3;
-    // Couche par signe de psi : rouge=psi>0, bleu=psi<0 (comme dans le Python)
-    if (data.psi && data.psi[i] > 0) {
-      colorsLayer[i*3]=0.9; colorsLayer[i*3+1]=0.25; colorsLayer[i*3+2]=0.2;
+  for (let i = 0; i < n; i++) {
+    positions[i*3] = data.x[i]; positions[i*3+1] = data.y[i]; positions[i*3+2] = data.z[i];
+    zArr[i] = data.z[i];
+    // Dégradé de distance teinté par orbitale (70 % dégradé, 30 % teinte)
+    const [dr, dg, db] = distColor(data.r_norm[i]);
+    colorsDist[i*3]   = dr*0.7 + tint[0]*0.3;
+    colorsDist[i*3+1] = dg*0.7 + tint[1]*0.3;
+    colorsDist[i*3+2] = db*0.7 + tint[2]*0.3;
+    // Couleur par signe de ψ : rouge = ψ>0, bleu = ψ<0 (comme dans le Python)
+    if (data.psi[i] > 0) {
+      colorsLayer[i*3] = 0.9;  colorsLayer[i*3+1] = 0.25; colorsLayer[i*3+2] = 0.2;
     } else {
-      colorsLayer[i*3]=0.15; colorsLayer[i*3+1]=0.35; colorsLayer[i*3+2]=0.95;
+      colorsLayer[i*3] = 0.15; colorsLayer[i*3+1] = 0.35; colorsLayer[i*3+2] = 0.95;
     }
   }
 
@@ -436,33 +537,31 @@ function renderAll() {
   meshes = [];
 
   allData.forEach(d => {
-    // Skip hidden layers
-    if (layerVisible[d.orbital] === false) return;
-    const n = d.positions.length/3;
-    const thickness = coupeActive ? 0.35e-10 : Infinity;
+    const n = d.positions.length / 3;
+    const thickness = 0.35e-10;
 
-    const idx=[];
-    for (let i=0;i<n;i++) {
-      if (!coupeActive || Math.abs(d.zArr[i]-coupeZ)<=thickness) idx.push(i);
+    const idx = [];
+    for (let i = 0; i < n; i++) {
+      if (!coupeActive || Math.abs(d.zArr[i] - coupeZ) <= thickness) idx.push(i);
     }
 
-    const m=idx.length;
-    const pos=new Float32Array(m*3), col=new Float32Array(m*3);
+    const m = idx.length;
+    const pos = new Float32Array(m*3), col = new Float32Array(m*3);
     const srcCol = colorMode === 'layer' ? d.colorsLayer : d.colorsDist;
-    idx.forEach((k,j)=>{
-      pos[j*3]=d.positions[k*3]; pos[j*3+1]=d.positions[k*3+1]; pos[j*3+2]=d.positions[k*3+2];
-      col[j*3]=srcCol[k*3];   col[j*3+1]=srcCol[k*3+1];   col[j*3+2]=srcCol[k*3+2];
+    idx.forEach((k, j) => {
+      pos[j*3] = d.positions[k*3]; pos[j*3+1] = d.positions[k*3+1]; pos[j*3+2] = d.positions[k*3+2];
+      col[j*3] = srcCol[k*3];      col[j*3+1] = srcCol[k*3+1];      col[j*3+2] = srcCol[k*3+2];
     });
 
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-    geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
 
-    const mesh=new THREE.Points(geo,new THREE.PointsMaterial({
+    const mesh = new THREE.Points(geo, new THREE.PointsMaterial({
       size: coupeActive ? 12e-12 : 8e-12,
-      vertexColors:true, transparent:true,
+      vertexColors: true, transparent: true,
       opacity: coupeActive ? 0.92 : 0.78,
-      sizeAttenuation:true,
+      sizeAttenuation: true,
       map: SPRITE_TEX,
       alphaTest: 0.05,
       depthWrite: false
@@ -472,47 +571,65 @@ function renderAll() {
   });
 }
 
-// Circular sprite texture for round points
+// Texture circulaire pour des points ronds
 const _spriteCanvas = document.createElement('canvas');
 _spriteCanvas.width = _spriteCanvas.height = 64;
 const _ctx = _spriteCanvas.getContext('2d');
 const _grad = _ctx.createRadialGradient(32,32,0, 32,32,32);
-_grad.addColorStop(0,   'rgba(255,255,255,1)');
-_grad.addColorStop(0.45,'rgba(255,255,255,1)');
-_grad.addColorStop(1,   'rgba(255,255,255,0)');
+_grad.addColorStop(0,    'rgba(255,255,255,1)');
+_grad.addColorStop(0.45, 'rgba(255,255,255,1)');
+_grad.addColorStop(1,    'rgba(255,255,255,0)');
 _ctx.fillStyle = _grad;
-_ctx.fillRect(0,0,64,64);
+_ctx.fillRect(0, 0, 64, 64);
 const SPRITE_TEX = new THREE.CanvasTexture(_spriteCanvas);
 
-// Resize
-new ResizeObserver(()=>{
-  const w=canvas.clientWidth, h=canvas.clientHeight;
-  renderer.setSize(w,h,false);
-  camera.aspect=w/h; camera.updateProjectionMatrix();
+// Redimensionnement
+new ResizeObserver(() => {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
 }).observe(canvas);
 
-// Orbit
-let drag=false,lx=0,ly=0;
-canvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
-window.addEventListener('mouseup',()=>drag=false);
-window.addEventListener('mousemove',e=>{
-  if(!drag)return;
-  sph.theta-=(e.clientX-lx)*0.007;
-  sph.phi=Math.max(0.05,Math.min(Math.PI-0.05,sph.phi+(e.clientY-ly)*0.007));
-  lx=e.clientX;ly=e.clientY;camUpdate();
+// Rotation / zoom — pointer events (souris + tactile) + clavier
+let drag = false, lx = 0, ly = 0;
+canvas.addEventListener('pointerdown', e => {
+  drag = true; lx = e.clientX; ly = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
 });
-canvas.addEventListener('wheel',e=>{
+canvas.addEventListener('pointermove', e => {
+  if (!drag) return;
+  sph.theta -= (e.clientX - lx) * 0.007;
+  sph.phi = Math.max(0.05, Math.min(Math.PI - 0.05, sph.phi + (e.clientY - ly) * 0.007));
+  lx = e.clientX; ly = e.clientY; camUpdate();
+});
+canvas.addEventListener('pointerup',     () => drag = false);
+canvas.addEventListener('pointercancel', () => drag = false);
+function zoom(factor) {
+  sph.r = Math.max(R_MIN, Math.min(R_MAX, sph.r * factor));
+  camUpdate();
+}
+canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  sph.r*=e.deltaY>0?1.12:0.89;camUpdate();
-},{passive:false});
+  zoom(e.deltaY > 0 ? 1.12 : 0.89);
+}, { passive: false });
+canvas.addEventListener('keydown', e => {
+  const step = 0.12;
+  switch (e.key) {
+    case 'ArrowLeft':  sph.theta += step; break;
+    case 'ArrowRight': sph.theta -= step; break;
+    case 'ArrowUp':    sph.phi = Math.max(0.05, sph.phi - step); break;
+    case 'ArrowDown':  sph.phi = Math.min(Math.PI - 0.05, sph.phi + step); break;
+    case '+': case '=': zoom(0.89); e.preventDefault(); return;
+    case '-': case '_': zoom(1.12); e.preventDefault(); return;
+    default: return;
+  }
+  e.preventDefault();
+  camUpdate();
+});
 
-(function loop(){requestAnimationFrame(loop);renderer.render(scene,camera);})();
+(function loop(){ requestAnimationFrame(loop); renderer.render(scene, camera); })();
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let currentAtom = null;
-let selectedZ = 1;
-
-// ── Orbitale equations (portées depuis orbitale.py) ───────────────────────────
+// ── Équations des orbitales (portées depuis orbitale.py) ──────────────────────
 const a0 = 5.29e-11;
 
 // Même logique que Probap() dans le Python
@@ -585,93 +702,91 @@ function computeOrbital(N, Z, type) {
   return { x: xOut, y: yOut, z: zOut, r_norm, psi: psiOut, a0 };
 }
 
-// Config électronique Z=1..18 → orbitales disponibles (uniquement celles du Python)
-
-// ── Periodic table ────────────────────────────────────────────────────────────
-// Supprimé — uniquement H, He+, Li2+
-
-function buildPeriodicTable() {}
-function openTableau()  {}
-function closeTableau() {}
-
-// ── Ion selection ─────────────────────────────────────────────────────────────
+// ── Sélection d'ion ───────────────────────────────────────────────────────────
 const IONS = {
-  1: { sym:'H',   label:'Hydrogène',                   ion:'' },
-  2: { sym:'He⁺', label:'Hélium ionisé',               ion:'He⁺' },
-  3: { sym:'Li²⁺',label:'Lithium doublement ionisé',   ion:'Li²⁺' },
+  1: { sym:'H',    label:'Hydrogène' },
+  2: { sym:'He⁺',  label:'Hélium ionisé' },
+  3: { sym:'Li²⁺', label:'Lithium doublement ionisé' },
 };
+let selectedZ = 1;
 
 function selectIon(Z) {
   selectedZ = Z;
-  document.querySelectorAll('#ion-btns .atom-card').forEach(c => c.style.borderColor='');
-  const card = document.getElementById('ion-'+Z);
-  if (card) card.style.borderColor = 'var(--ink)';
+  document.querySelectorAll('#ion-btns .atom-card').forEach(c => c.setAttribute('aria-pressed', 'false'));
+  const card = document.getElementById('ion-' + Z);
+  if (card) card.setAttribute('aria-pressed', 'true');
   document.getElementById('badge').textContent = IONS[Z].sym;
 }
+[1, 2, 3].forEach(Z => document.getElementById('ion-' + Z).addEventListener('click', () => selectIon(Z)));
 
-// ── Coupe ──────────────────────────────────────────────────────────────────────
+// ── Coupe transversale ────────────────────────────────────────────────────────
 const btnCoupe = document.getElementById('btn-coupe');
 const coupeBlock = document.getElementById('coupe-block');
 const coupeSlider = document.getElementById('coupe-slider');
 
-btnCoupe.addEventListener('click',()=>{
-  coupeActive=!coupeActive;
-  btnCoupe.classList.toggle('active',coupeActive);
-  coupeBlock.classList.toggle('visible',coupeActive);
-  document.getElementById('coupe-icon').textContent=coupeActive?'◉':'⊘';
+btnCoupe.addEventListener('click', () => {
+  coupeActive = !coupeActive;
+  btnCoupe.classList.toggle('active', coupeActive);
+  btnCoupe.setAttribute('aria-pressed', String(coupeActive));
+  coupeBlock.classList.toggle('visible', coupeActive);
+  document.getElementById('coupe-icon').textContent = coupeActive ? '◉' : '⊘';
   renderAll();
 });
-coupeSlider.addEventListener('input',()=>{
-  const v=parseFloat(coupeSlider.value);
-  document.getElementById('coupe-val').textContent=v.toFixed(1);
-  coupeZ=v*window._a0;
+coupeSlider.addEventListener('input', () => {
+  const v = parseFloat(coupeSlider.value);
+  document.getElementById('coupe-val').textContent = v.toFixed(1);
+  coupeZ = v * a0;
   renderAll();
 });
 
-// ── Orbital selector tags (pour choisir lesquelles afficher) ──────────────────
+// ── Sélecteur d'orbitales ─────────────────────────────────────────────────────
 let selectedOrbitals = new Set(['1s']);
+const ALL_ORB_TYPES = ['1s', '2s', '3s', '2pz', '2px', '2py'];
 
-// Les 6 orbitales supportées (exactement celles du Python)
-const ALL_ORB_TYPES = ['1s','2s','3s','2pz','2px','2py'];
-
-function buildOrbSelectTags(Z) {
+function buildOrbSelectTags() {
   const container = document.getElementById('orb-select-tags');
   container.innerHTML = '';
   ALL_ORB_TYPES.forEach(type => {
-    const tag = document.createElement('div');
+    const tag = document.createElement('button');
+    tag.type = 'button';
     tag.className = 'orb-tag';
-    tag.style.cursor = 'pointer';
     const active = selectedOrbitals.has(type);
     const color = ORB_CSS[type] || '#888';
-    tag.style.borderColor = active ? color : 'var(--line)';
-    tag.style.background = active ? color+'22' : 'transparent';
-    tag.dataset.orb = type;
-    tag.innerHTML = `<div class="orb-dot" style="background:${color}"></div>${type}`;
+    tag.setAttribute('aria-pressed', String(active));
+    tag.style.borderColor = active ? color : '';
+    tag.style.background = active ? color + '22' : '';
+    if (active) tag.style.boxShadow = `inset 0 0 0 1px ${color}`;
+    const dot = document.createElement('span');
+    dot.className = 'orb-dot';
+    dot.style.background = color;
+    dot.setAttribute('aria-hidden', 'true');
+    tag.appendChild(dot);
+    tag.appendChild(document.createTextNode(type));
     tag.addEventListener('click', () => {
       if (selectedOrbitals.has(type)) {
         if (selectedOrbitals.size > 1) selectedOrbitals.delete(type);
       } else {
         selectedOrbitals.add(type);
       }
-      buildOrbSelectTags(selectedZ);
+      buildOrbSelectTags();
     });
     container.appendChild(tag);
   });
 }
 
-// ── Generate (calcul local, équations Python) ─────────────────────────────────
+// ── Génération ────────────────────────────────────────────────────────────────
 async function generate() {
-  const err=document.getElementById('err');
-  err.style.display='none';
-  const btn=document.getElementById('btn');
-  btn.disabled=true;
-  btnCoupe.disabled=true;
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btnCoupe.disabled = true;
 
-  const loader=document.getElementById('loader');
-  const loaderTxt=document.getElementById('loader-txt');
+  const loader = document.getElementById('loader');
+  const loaderTxt = document.getElementById('loader-txt');
   loader.classList.remove('hidden');
 
-  const N = parseInt(document.getElementById('ns').value);
+  const N = parseInt(document.getElementById('ns').value, 10);
   const t0 = performance.now();
 
   try {
@@ -679,64 +794,61 @@ async function generate() {
     const orbitals = [...selectedOrbitals];
     let totalPoints = 0;
 
-    for (let i=0; i<orbitals.length; i++) {
+    for (let i = 0; i < orbitals.length; i++) {
       const type = orbitals[i];
       loaderTxt.textContent = `Calcul orbitale ${type} (${i+1}/${orbitals.length})…`;
-      await new Promise(r=>setTimeout(r,10)); // allow UI update
+      await new Promise(r => setTimeout(r, 10)); // laisse l'UI se rafraîchir
 
       const data = computeOrbital(N, selectedZ, type);
-      window._a0 = data.a0;
       buildOrbitalCloud(data, type);
       totalPoints += data.x.length;
     }
 
-    loaderTxt.textContent='Rendu…';
-    await new Promise(r=>setTimeout(r,30));
-    updateLayerLegend();
-    buildLayerToggles();
-    renderAll();
-
-    coupeSlider.min=-20; coupeSlider.max=20; coupeSlider.value=0;
-    coupeZ=0;
-    document.getElementById('coupe-val').textContent='0.0';
-
-    const ms = Math.round(performance.now()-t0);
-    document.getElementById('sp').textContent = totalPoints.toLocaleString('fr');
-    document.getElementById('sm').textContent = ms;
-    document.getElementById('sb').style.display='block';
-
-
-    const badge=document.getElementById('badge');
-    badge.textContent = IONS[selectedZ] ? IONS[selectedZ].sym : '';
-    badge.style.display='block';
-    btnCoupe.disabled=false;
+    loaderTxt.textContent = 'Rendu…';
+    await new Promise(r => setTimeout(r, 30));
 
     if (coupeActive) {
-      coupeActive=false;
+      coupeActive = false;
       btnCoupe.classList.remove('active');
+      btnCoupe.setAttribute('aria-pressed', 'false');
       coupeBlock.classList.remove('visible');
-      document.getElementById('coupe-icon').textContent='⊘';
+      document.getElementById('coupe-icon').textContent = '⊘';
     }
+    coupeSlider.value = 0;
+    coupeZ = 0;
+    document.getElementById('coupe-val').textContent = '0.0';
 
-  } catch(e) {
-    err.textContent=`Erreur : ${e.message}`;
-    err.style.display='block';
+    renderAll();
+
+    const ms = Math.round(performance.now() - t0);
+    document.getElementById('sp').textContent = totalPoints.toLocaleString('fr');
+    document.getElementById('sm').textContent = ms;
+    document.getElementById('sb').style.display = 'block';
+
+    const badge = document.getElementById('badge');
+    badge.textContent = IONS[selectedZ] ? IONS[selectedZ].sym : '';
+    badge.style.display = 'block';
+    btnCoupe.disabled = false;
+    loaderTxt.textContent = `Terminé : ${totalPoints.toLocaleString('fr')} points en ${ms} ms.`;
+
+  } catch (e) {
+    err.textContent = `Erreur : ${e.message}`;
+    err.style.display = 'block';
   } finally {
     loader.classList.add('hidden');
-    btn.disabled=false;
+    btn.disabled = false;
   }
 }
 
-document.getElementById('ns').addEventListener('input',()=>{
-  document.getElementById('nv').textContent=(+document.getElementById('ns').value).toLocaleString('fr');
+document.getElementById('ns').addEventListener('input', () => {
+  document.getElementById('nv').textContent = (+document.getElementById('ns').value).toLocaleString('fr');
 });
-
 document.getElementById('btn').addEventListener('click', generate);
 
-(async ()=>{
-  selectIon(1);
-  buildOrbSelectTags(1);
-})();
+// ── Initialisation ────────────────────────────────────────────────────────────
+selectIon(1);
+buildOrbSelectTags();
+generate(); // affiche l'orbitale 1s dès l'ouverture
 </script>
 </body>
 </html>
