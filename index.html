@@ -160,16 +160,37 @@ main { position:relative; overflow:hidden; }
 .hint { position:absolute; bottom:14px; right:16px; font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); pointer-events:none; background:rgba(232,232,229,.8); padding:4px 8px; border-radius:3px; }
 .badge { position:absolute; top:16px; left:16px; font-family:'DM Serif Display',serif; font-style:italic; font-size:2rem; color:var(--sub); pointer-events:none; display:none; }
 
-/* ── Bouton et panneau Paramètres ── */
-#btn-settings {
-  position:absolute; top:14px; right:14px;
+/* ── Boutons Paramètres / Aide ── */
+#btn-settings, #btn-help {
+  position:absolute; top:14px;
   background:var(--bg); border:var(--border-w) solid var(--line); color:var(--ink);
   font-family:inherit; font-size:.95rem; letter-spacing:.08em;
   text-transform:uppercase; padding:var(--ctl-pad); min-height:var(--btn-minh);
   cursor:pointer; border-radius:4px; transition:border-color .13s; z-index:5;
   display:flex; align-items:center; gap:7px;
 }
-#btn-settings:hover { border-color:var(--ink); }
+#btn-settings { right:14px; }
+#btn-help { right:calc(14px + 11em); min-width:var(--btn-minh); justify-content:center; }
+#btn-settings:hover, #btn-help:hover { border-color:var(--ink); }
+
+/* ── Fenêtre d'introduction ── */
+#intro {
+  position:fixed; inset:0; z-index:50;
+  background:rgba(20,20,18,.45);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+#intro[hidden] { display:none; }
+.intro-card {
+  background:var(--bg); border:var(--border-w) solid var(--ink); border-radius:8px;
+  max-width:600px; width:100%; max-height:90vh; overflow-y:auto;
+  padding:28px; display:flex; flex-direction:column; gap:16px;
+  box-shadow:0 10px 40px rgba(0,0,0,.3);
+}
+.intro-card h2 { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.2; }
+.intro-card p, .intro-card li { font-size:1rem; line-height:1.6; }
+.intro-card ul { padding-left:1.3em; display:flex; flex-direction:column; gap:6px; }
+.intro-check { display:flex; align-items:center; gap:10px; font-size:.95rem; cursor:pointer; min-height:var(--btn-minh); }
+.intro-check input { width:1.3em; height:1.3em; cursor:pointer; accent-color:var(--ink); }
 
 #settings {
   position:absolute; top:14px; right:14px;
@@ -335,9 +356,39 @@ main { position:relative; overflow:hidden; }
   <div class="hint" aria-hidden="true">glisser : rotation · molette : zoom · flèches / + − : clavier</div>
   <div class="badge" id="badge" aria-hidden="true"></div>
 
+  <button type="button" id="btn-help" aria-haspopup="dialog" aria-label="Aide : à quoi sert ce site ?">
+    <span aria-hidden="true">?</span> Aide
+  </button>
   <button type="button" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
     <span aria-hidden="true">⚙</span> Paramètres
   </button>
+
+  <div id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" hidden>
+    <div class="intro-card">
+      <h2 id="intro-title">Bienvenue sur Orbitales Atomiques</h2>
+      <p>Ce site permet de <strong>visualiser en 3D les orbitales atomiques</strong> — les régions
+        de l'espace où l'électron a le plus de chances de se trouver — pour des systèmes à
+        un seul électron : l'hydrogène (H), l'hélium ionisé (He⁺) et le lithium doublement
+        ionisé (Li²⁺). Chaque orbitale est représentée par un nuage de points calculé à
+        partir de sa fonction d'onde ψ.</p>
+      <p>Comment l'utiliser :</p>
+      <ul>
+        <li><strong>Choisissez un système</strong> (H, He⁺ ou Li²⁺) dans le panneau de gauche.</li>
+        <li><strong>Sélectionnez une ou plusieurs orbitales</strong> (1s, 2s, 3s, 2pz, 2px, 2py).</li>
+        <li>Réglez le <strong>nombre de points</strong> puis cliquez sur <strong>Générer</strong>.</li>
+        <li><strong>Explorez la vue 3D</strong> : glissez pour tourner, molette pour zoomer
+          (ou flèches et +/− au clavier). La <strong>coupe transversale</strong> montre
+          l'intérieur du nuage.</li>
+        <li>Le <strong>mode de couleur</strong> colore les points selon leur distance au noyau
+          ou selon le signe de ψ.</li>
+      </ul>
+      <label class="intro-check">
+        <input type="checkbox" id="intro-skip">
+        Ne plus afficher cette introduction au démarrage
+      </label>
+      <button type="button" class="btn-main" id="intro-close">Commencer</button>
+    </div>
+  </div>
 
   <div id="settings" role="dialog" aria-labelledby="settings-title" hidden>
     <div class="settings-header">
@@ -435,6 +486,31 @@ document.getElementById('fs-reset').addEventListener('click', () => {
 });
 
 applySettings();
+
+// ── Fenêtre d'introduction ────────────────────────────────────────────────────
+const INTRO_KEY = 'orbitales-intro-hidden';
+const intro = document.getElementById('intro');
+const introSkip = document.getElementById('intro-skip');
+
+function openIntro() {
+  introSkip.checked = localStorage.getItem(INTRO_KEY) === 'true';
+  intro.hidden = false;
+  document.getElementById('intro-close').focus();
+}
+function closeIntro() {
+  intro.hidden = true;
+  try { localStorage.setItem(INTRO_KEY, String(introSkip.checked)); } catch (e) {}
+}
+document.getElementById('intro-close').addEventListener('click', closeIntro);
+document.getElementById('btn-help').addEventListener('click', openIntro);
+intro.addEventListener('click', e => { if (e.target === intro) closeIntro(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !intro.hidden) closeIntro();
+});
+
+let showIntro = true;
+try { showIntro = localStorage.getItem(INTRO_KEY) !== 'true'; } catch (e) {}
+if (showIntro) openIntro();
 
 // ── Three.js ──────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
