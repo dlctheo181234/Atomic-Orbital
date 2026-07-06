@@ -55,6 +55,7 @@ aside {
 
 .block { padding:16px 0; border-top:var(--border-w) solid var(--line); }
 .lbl   { display:block; font-size:.8rem; text-transform:uppercase; letter-spacing:.14em; color:var(--sub); margin-bottom:10px; font-weight:500; }
+.note  { font-size:.85rem; color:var(--sub); line-height:1.55; margin-top:10px; }
 
 /* Cartes de sélection d'ion (vrais boutons) */
 .atom-card {
@@ -271,6 +272,8 @@ main { position:relative; overflow:hidden; }
   <section class="block">
     <span class="lbl" id="lbl-orb">Orbitales affichées</span>
     <div class="orb-tags" id="orb-select-tags" role="group" aria-labelledby="lbl-orb"></div>
+    <p class="note">Ces systèmes n'ont qu'un seul électron : toutes ces orbitales lui sont
+      accessibles. Au fondamental il occupe 1s ; les autres sont des états excités.</p>
   </section>
 
   <!-- Nombre de points -->
