@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orbitales Atomiques</title>
+<title>Orbitale — Simulation d'orbitales atomiques</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -35,7 +35,7 @@ html.a11y {
 }
 
 html,body { height:100%; background:var(--bg); color:var(--ink); font-family:'DM Mono',monospace; }
-body { display:grid; grid-template-columns:var(--sidebar) 1fr; height:100vh; overflow:hidden; }
+body { height:100vh; overflow:hidden; }
 
 :focus-visible { outline:3px solid var(--focus); outline-offset:2px; border-radius:3px; }
 
@@ -43,7 +43,32 @@ body { display:grid; grid-template-columns:var(--sidebar) 1fr; height:100vh; ove
   *, *::before, *::after { transition:none !important; animation-duration:.01s !important; }
 }
 
-/* ── Sidebar ── */
+.view { height:100vh; }
+.view[hidden] { display:none !important; }
+
+/* ── Page d'accueil ───────────────────────────────────────────── */
+#view-home {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:28px; padding:30px; position:relative; text-align:center;
+}
+.home-logo { position:absolute; top:22px; right:26px; }
+.home-title { font-family:'DM Serif Display',serif; font-size:4rem; line-height:1.1; }
+.home-sub { font-size:1.05rem; color:var(--sub); letter-spacing:.1em; }
+.home-cards { display:flex; gap:28px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+.home-card {
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  width:260px; padding:26px 20px;
+  border:var(--border-w) solid var(--line); border-radius:10px;
+  background:var(--bg); color:var(--ink); cursor:pointer; font-family:inherit;
+  transition:border-color .13s, transform .13s, box-shadow .13s;
+}
+.home-card:hover { border-color:var(--ink); transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.home-card .card-name { font-size:1.15rem; letter-spacing:.06em; }
+.home-credit { margin-top:30px; max-width:640px; font-size:.9rem; color:var(--sub); line-height:1.6; }
+
+/* ── Pages de simulation (grille sidebar + zone) ──────────────── */
+.sim-page { display:grid; grid-template-columns:var(--sidebar) 1fr; height:100vh; overflow:hidden; }
+
 aside {
   border-right:var(--border-w) solid var(--line);
   display:flex; flex-direction:column;
@@ -106,6 +131,13 @@ input[type=range]::-moz-range-thumb {
 }
 input[type=range]::-moz-range-track { height:var(--track-h); background:var(--line); border-radius:99px; }
 
+input[type=number] {
+  font-family:inherit; font-size:1rem; color:var(--ink); background:var(--bg);
+  border:var(--border-w) solid var(--line); border-radius:4px;
+  padding:var(--ctl-pad); min-height:var(--btn-minh); width:100%;
+}
+input[type=number]:hover { border-color:var(--ink); }
+
 /* Légende */
 .legend-bar { width:100%; height:8px; border-radius:4px; background:linear-gradient(to right,#1a237e,#1565c0,#00897b,#f9a825,#e53935); }
 .legend-labels { display:flex; justify-content:space-between; font-size:.85rem; color:var(--sub); margin-top:4px; }
@@ -141,7 +173,7 @@ input[type=range]::-moz-range-track { height:var(--track-h); background:var(--li
 #coupe-block.visible { display:block; }
 .err { margin-top:4px; font-size:.95rem; color:var(--err); line-height:1.5; display:none; }
 
-/* ── Zone canvas ── */
+/* ── Zone canvas (modèle quantique) ── */
 main { position:relative; overflow:hidden; }
 #c { width:100%; height:100%; display:block; touch-action:none; }
 #loader {
@@ -157,40 +189,74 @@ main { position:relative; overflow:hidden; }
   animation:spin .7s linear infinite;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
-.hint { position:absolute; bottom:14px; right:16px; font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); pointer-events:none; background:rgba(232,232,229,.8); padding:4px 8px; border-radius:3px; }
+.hint { position:absolute; bottom:14px; left:16px; font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); pointer-events:none; background:rgba(232,232,229,.8); padding:4px 8px; border-radius:3px; }
 .badge { position:absolute; top:16px; left:16px; font-family:'DM Serif Display',serif; font-style:italic; font-size:2rem; color:var(--sub); pointer-events:none; display:none; }
 
-/* ── Boutons Paramètres / Aide ── */
-#btn-settings, #btn-help {
-  position:absolute; top:14px;
+/* ── Boutons flottants (aide, paramètres, accueil) ── */
+.float-btn {
+  position:absolute;
   background:var(--bg); border:var(--border-w) solid var(--line); color:var(--ink);
   font-family:inherit; font-size:.95rem; letter-spacing:.08em;
   text-transform:uppercase; padding:var(--ctl-pad); min-height:var(--btn-minh);
   cursor:pointer; border-radius:4px; transition:border-color .13s; z-index:5;
   display:flex; align-items:center; gap:7px;
 }
-#btn-settings { right:14px; }
-#btn-help { right:calc(14px + 11em); min-width:var(--btn-minh); justify-content:center; }
-#btn-settings:hover, #btn-help:hover { border-color:var(--ink); }
+.float-btn:hover { border-color:var(--ink); }
+.btn-help { top:14px; right:14px; min-width:var(--btn-minh); justify-content:center; font-weight:500; }
+.btn-help .qmark {
+  color:#c0281c; font-family:'DM Serif Display',serif; font-size:1.5rem; line-height:1; font-weight:700;
+}
+#btn-settings { top:14px; right:calc(14px + 5.5em); }
+.btn-home { bottom:14px; right:14px; }
 
-/* ── Fenêtre d'introduction ── */
-#intro {
+/* ── Page modèle classique ── */
+#cl-main { position:relative; display:flex; flex-direction:column; overflow:hidden; }
+.cl-topbar {
+  display:flex; gap:10px; align-items:center; justify-content:center;
+  padding:14px 170px 14px 20px; border-bottom:var(--border-w) solid var(--line);
+  flex-wrap:wrap;
+}
+.cl-topbar .btn-sec { width:auto; }
+#cl-title {
+  text-align:center; font-family:'DM Serif Display',serif;
+  font-size:1.25rem; padding:12px 16px 0;
+}
+#cl-title.collapsed { color:var(--err); }
+.cl-canvas-wrap { flex:1; position:relative; min-height:0; }
+#cl-canvas { width:100%; height:100%; display:block; }
+.cl-legend {
+  position:absolute; top:10px; left:14px;
+  display:flex; flex-direction:column; gap:5px;
+  font-size:.85rem; color:var(--sub);
+  background:rgba(232,232,229,.85); padding:8px 10px; border-radius:4px;
+  pointer-events:none;
+}
+.cl-legend div { display:flex; align-items:center; gap:7px; }
+#cl-replay {
+  position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+  width:auto; display:none;
+}
+#cl-replay.visible { display:flex; }
+
+/* ── Boîtes de dialogue ── */
+.overlay {
   position:fixed; inset:0; z-index:50;
   background:rgba(20,20,18,.45);
   display:flex; align-items:center; justify-content:center; padding:20px;
 }
-#intro[hidden] { display:none; }
-.intro-card {
+.overlay[hidden] { display:none; }
+.dlg-card {
   background:var(--bg); border:var(--border-w) solid var(--ink); border-radius:8px;
-  max-width:600px; width:100%; max-height:90vh; overflow-y:auto;
+  max-width:620px; width:100%; max-height:90vh; overflow-y:auto;
   padding:28px; display:flex; flex-direction:column; gap:16px;
   box-shadow:0 10px 40px rgba(0,0,0,.3);
 }
-.intro-card h2 { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.2; }
-.intro-card p, .intro-card li { font-size:1rem; line-height:1.6; }
-.intro-card ul { padding-left:1.3em; display:flex; flex-direction:column; gap:6px; }
-.intro-check { display:flex; align-items:center; gap:10px; font-size:.95rem; cursor:pointer; min-height:var(--btn-minh); }
-.intro-check input { width:1.3em; height:1.3em; cursor:pointer; accent-color:var(--ink); }
+.dlg-card h2 { font-family:'DM Serif Display',serif; font-size:1.5rem; line-height:1.2; }
+.dlg-card p, .dlg-card li { font-size:1rem; line-height:1.65; }
+.dlg-card ul { padding-left:1.3em; display:flex; flex-direction:column; gap:6px; }
+.dlg-nav { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.dlg-nav .btn-sec { width:auto; }
+.dlg-count { font-size:.9rem; color:var(--sub); letter-spacing:.1em; }
 
 #settings {
   position:absolute; top:14px; right:14px;
@@ -257,36 +323,105 @@ main { position:relative; overflow:hidden; }
 </head>
 <body>
 
-<aside aria-label="Panneau de contrôle">
-  <h1 class="title">Orbitales<br>Atomiques</h1>
-  <p class="sub">Systèmes hydrogénoïdes (1 électron)</p>
+<!-- ════════════════════════ PAGE D'ACCUEIL ════════════════════════ -->
+<div class="view" id="view-home">
+  <svg class="home-logo" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Logo Orbitale">
+    <g fill="none" stroke="#111" stroke-width="2">
+      <ellipse cx="32" cy="32" rx="28" ry="11"/>
+      <ellipse cx="32" cy="32" rx="28" ry="11" transform="rotate(60 32 32)"/>
+      <ellipse cx="32" cy="32" rx="28" ry="11" transform="rotate(120 32 32)"/>
+    </g>
+    <circle cx="32" cy="32" r="5" fill="#c0281c"/>
+    <circle cx="56" cy="22" r="3" fill="#1a3fa0"/>
+  </svg>
+
+  <h1 class="home-title">Orbitale</h1>
+  <p class="home-sub">Logiciel de simulation d'orbitales atomiques</p>
+
+  <div class="home-cards">
+    <button type="button" class="home-card" id="go-classique">
+      <svg width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+        <g fill="none" stroke="#1a3fa0" stroke-width="1.6">
+          <ellipse cx="45" cy="45" rx="38" ry="15"/>
+          <ellipse cx="45" cy="45" rx="38" ry="15" transform="rotate(60 45 45)"/>
+          <ellipse cx="45" cy="45" rx="38" ry="15" transform="rotate(-60 45 45)"/>
+        </g>
+        <circle cx="45" cy="45" r="6" fill="#333"/>
+        <circle cx="80" cy="37" r="4" fill="#c0281c"/>
+        <circle cx="26" cy="70" r="4" fill="#c0281c"/>
+        <circle cx="30" cy="18" r="4" fill="#c0281c"/>
+      </svg>
+      <span class="card-name">Modèle classique</span>
+    </button>
+    <button type="button" class="home-card" id="go-quantique">
+      <svg width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+        <ellipse cx="45" cy="28" rx="16" ry="22" fill="#1a3fa0" opacity="0.85"/>
+        <ellipse cx="45" cy="62" rx="16" ry="22" fill="#c0281c" opacity="0.85"/>
+        <circle cx="45" cy="45" r="3" fill="#111"/>
+      </svg>
+      <span class="card-name">Modèle quantique</span>
+    </button>
+  </div>
+
+  <p class="home-credit">Logiciel de simulation réalisé par William Darnaud,
+    Théo de la Chapelle et Samuel Soliman</p>
+</div>
+
+<!-- ════════════════════════ PAGE MODÈLE CLASSIQUE ════════════════════════ -->
+<div class="view sim-page" id="view-classique" hidden>
+  <aside aria-label="Panneau de contrôle du modèle classique">
+    <h1 class="title">Modèle<br>classique</h1>
+    <p class="sub">Rutherford · 1911</p>
+
+    <section class="block">
+      <span class="lbl" id="cl-lbl-ion">Choix de l'atome hydrogénoïde</span>
+      <div style="display:flex;flex-direction:column;gap:6px" id="cl-ion-btns" role="group" aria-labelledby="cl-lbl-ion"></div>
+      <p class="note">Un atome hydrogénoïde ne possède qu'un seul électron :
+        le noyau et l'électron forment un système à deux corps, comme une
+        planète autour du Soleil.</p>
+    </section>
+  </aside>
+
+  <main id="cl-main">
+    <div class="cl-topbar" role="group" aria-label="Choix du modèle">
+      <button type="button" class="btn-sec" id="cl-mode-newton" aria-pressed="true">Modèle stable de Newton</button>
+      <button type="button" class="btn-sec" id="cl-mode-reel" aria-pressed="false">Modèle réel</button>
+    </div>
+    <h2 id="cl-title">Modèle planétaire de Rutherford : Hydrogène</h2>
+
+    <div class="cl-canvas-wrap">
+      <canvas id="cl-canvas" role="img" aria-label="Animation du modèle classique de l'atome"></canvas>
+      <div class="cl-legend" aria-hidden="true">
+        <div><span class="orb-dot" style="background:#c0281c;width:1em;height:1em"></span>Noyau</div>
+        <div><span class="orb-dot" style="background:#1a3fa0;width:.8em;height:.8em"></span>Électron (−)</div>
+        <div id="cl-legend-traj"><span style="display:inline-block;width:1.2em;border-top:2px dashed #555"></span>Trajectoire</div>
+        <div id="cl-legend-photon" style="display:none"><span class="orb-dot" style="background:#e8a200"></span>Photon émis</div>
+      </div>
+      <button type="button" class="btn-main" id="cl-replay">Rejouer l'animation</button>
+    </div>
+
+    <button type="button" class="float-btn btn-help" id="cl-help-btn" aria-haspopup="dialog"
+            aria-label="Aide : pourquoi l'électron s'effondre-t-il ?">
+      <span class="qmark" aria-hidden="true">?</span>
+    </button>
+    <button type="button" class="float-btn btn-home" id="cl-home-btn">
+      <span aria-hidden="true">⌂</span> accueil
+    </button>
+  </main>
+</div>
+
+<!-- ════════════════════════ PAGE MODÈLE QUANTIQUE ════════════════════════ -->
+<div class="view sim-page" id="view-quantique" hidden>
+<aside aria-label="Panneau de contrôle du modèle quantique">
+  <h1 class="title">Modèle<br>quantique</h1>
+  <p class="sub">Schrödinger · nuage de probabilité</p>
 
   <!-- Sélecteur d'ion -->
   <section class="block">
-    <span class="lbl" id="lbl-ion">Système</span>
-    <div style="display:flex;flex-direction:column;gap:6px" id="ion-btns" role="group" aria-labelledby="lbl-ion">
-      <button type="button" class="atom-card" id="ion-1" aria-pressed="true">
-        <span class="atom-symbol" aria-hidden="true">H</span>
-        <span class="atom-info">
-          <span class="atom-name">Hydrogène</span>
-          <span class="atom-Z">Z = 1 · neutre</span>
-        </span>
-      </button>
-      <button type="button" class="atom-card" id="ion-2" aria-pressed="false">
-        <span class="atom-symbol" aria-hidden="true">He⁺</span>
-        <span class="atom-info">
-          <span class="atom-name">Hélium ionisé</span>
-          <span class="atom-Z">Z = 2 · +1</span>
-        </span>
-      </button>
-      <button type="button" class="atom-card" id="ion-3" aria-pressed="false">
-        <span class="atom-symbol" aria-hidden="true">Li²⁺</span>
-        <span class="atom-info">
-          <span class="atom-name">Lithium doublement ionisé</span>
-          <span class="atom-Z">Z = 3 · +2</span>
-        </span>
-      </button>
-    </div>
+    <span class="lbl" id="lbl-ion">Choix de l'atome hydrogénoïde</span>
+    <div style="display:flex;flex-direction:column;gap:6px" id="ion-btns" role="group" aria-labelledby="lbl-ion"></div>
+    <p class="note">Configuration électronique à l'état fondamental : <strong>1s¹</strong>
+      (l'unique électron occupe l'orbitale 1s, la plus stable).</p>
   </section>
 
   <!-- Sélecteur d'orbitales -->
@@ -300,9 +435,12 @@ main { position:relative; overflow:hidden; }
   <!-- Nombre de points -->
   <section class="block">
     <label class="lbl" for="ns">Nombre de points</label>
-    <div class="sr" aria-hidden="true"><span>200</span><strong id="nv">1 500</strong><span>8 000</span></div>
-    <input type="range" id="ns" min="200" max="8000" step="100" value="1500"
+    <div class="sr" aria-hidden="true"><span>200</span><strong id="nv">3 600</strong><span>8 000</span></div>
+    <input type="range" id="ns" min="200" max="8000" step="100" value="3600"
            aria-describedby="nv">
+    <label for="ns-num" style="display:block;font-size:.85rem;color:var(--sub);margin:8px 0 4px">
+      ou saisir une valeur exacte :</label>
+    <input type="number" id="ns-num" min="200" max="8000" step="100" value="3600">
   </section>
 
   <!-- Mode de couleur + légende -->
@@ -356,39 +494,16 @@ main { position:relative; overflow:hidden; }
   <div class="hint" aria-hidden="true">glisser : rotation · molette : zoom · flèches / + − : clavier</div>
   <div class="badge" id="badge" aria-hidden="true"></div>
 
-  <button type="button" id="btn-help" aria-haspopup="dialog" aria-label="Aide : à quoi sert ce site ?">
-    <span aria-hidden="true">?</span> Aide
+  <button type="button" class="float-btn btn-help" id="q-help-btn" aria-haspopup="dialog"
+          aria-label="Aide : comprendre le modèle quantique">
+    <span class="qmark" aria-hidden="true">?</span>
   </button>
-  <button type="button" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
+  <button type="button" class="float-btn" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
     <span aria-hidden="true">⚙</span> Paramètres
   </button>
-
-  <div id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" hidden>
-    <div class="intro-card">
-      <h2 id="intro-title">Bienvenue sur Orbitales Atomiques</h2>
-      <p>Ce site permet de <strong>visualiser en 3D les orbitales atomiques</strong> — les régions
-        de l'espace où l'électron a le plus de chances de se trouver — pour des systèmes à
-        un seul électron : l'hydrogène (H), l'hélium ionisé (He⁺) et le lithium doublement
-        ionisé (Li²⁺). Chaque orbitale est représentée par un nuage de points calculé à
-        partir de sa fonction d'onde ψ.</p>
-      <p>Comment l'utiliser :</p>
-      <ul>
-        <li><strong>Choisissez un système</strong> (H, He⁺ ou Li²⁺) dans le panneau de gauche.</li>
-        <li><strong>Sélectionnez une ou plusieurs orbitales</strong> (1s, 2s, 3s, 2pz, 2px, 2py).</li>
-        <li>Réglez le <strong>nombre de points</strong> puis cliquez sur <strong>Générer</strong>.</li>
-        <li><strong>Explorez la vue 3D</strong> : glissez pour tourner, molette pour zoomer
-          (ou flèches et +/− au clavier). La <strong>coupe transversale</strong> montre
-          l'intérieur du nuage.</li>
-        <li>Le <strong>mode de couleur</strong> colore les points selon leur distance au noyau
-          ou selon le signe de ψ.</li>
-      </ul>
-      <label class="intro-check">
-        <input type="checkbox" id="intro-skip">
-        Ne plus afficher cette introduction au démarrage
-      </label>
-      <button type="button" class="btn-main" id="intro-close">Commencer</button>
-    </div>
-  </div>
+  <button type="button" class="float-btn btn-home" id="q-home-btn">
+    <span aria-hidden="true">⌂</span> accueil
+  </button>
 
   <div id="settings" role="dialog" aria-labelledby="settings-title" hidden>
     <div class="settings-header">
@@ -417,9 +532,97 @@ main { position:relative; overflow:hidden; }
     </div>
   </div>
 </main>
+</div>
+
+<!-- ════════════ Dialogue d'aide : modèle classique ════════════ -->
+<div class="overlay" id="cl-help" role="dialog" aria-modal="true" aria-labelledby="cl-help-title" hidden>
+  <div class="dlg-card">
+    <h2 id="cl-help-title">Pourquoi l'atome classique s'effondre-t-il ?</h2>
+    <p>Selon les équations de Maxwell et la loi de Larmor, toute particule chargée
+      et accélérée doit émettre des ondes électromagnétiques. En rayonnant,
+      l'électron perdrait continuellement de son énergie cinétique. Privé
+      d'énergie, l'électron décrirait une spirale et s'écraserait sur le noyau
+      positif en environ une nanoseconde, ce qui contredit la stabilité de la
+      matière.</p>
+    <button type="button" class="btn-main" id="cl-help-close">J'ai compris</button>
+  </div>
+</div>
+
+<!-- ════════════ Dialogue d'aide : modèle quantique (3 fenêtres) ════════════ -->
+<div class="overlay" id="q-help" role="dialog" aria-modal="true" aria-labelledby="q-help-title" hidden>
+  <div class="dlg-card">
+    <h2 id="q-help-title">Comprendre le modèle quantique</h2>
+
+    <div id="q-help-page-1" class="q-help-page">
+      <p>Le modèle quantique de l'atome décrit l'électron non plus comme une
+        particule suivant une trajectoire précise, mais comme une onde de matière
+        associée à une <strong>probabilité de présence</strong> autour du noyau.
+        Cela signifie que l'on ne peut pas connaître la position précise de
+        l'électron à un instant t, mais uniquement la probabilité qu'il se trouve
+        à un endroit donné.</p>
+      <p style="margin-top:10px">Par exemple : pendant ce TP, votre probabilité de présence dans la salle
+        est très élevée, disons 95&nbsp;%. Il reste 5&nbsp;% de chance que vous soyez
+        malade, en retard ou retenu ailleurs, et donc absent de la salle. Pour
+        l'électron, c'est le même principe : on calcule la probabilité qu'il se
+        trouve à une certaine distance du noyau.</p>
+    </div>
+
+    <div id="q-help-page-2" class="q-help-page" hidden>
+      <p>Ces probabilités suivent une fonction mathématique (la
+        <strong>fonction d'onde</strong>) qui dessine des formes géométriques bien
+        particulières dans l'espace : les <strong>orbitales atomiques</strong>
+        (1s, 2s, 2p…). Grâce à l'équation de Schrödinger, on démontre que
+        l'énergie des électrons est <strong>quantifiée</strong>, c'est-à-dire
+        qu'ils ne peuvent occuper que des niveaux d'énergie bien précis.</p>
+    </div>
+
+    <div id="q-help-page-3" class="q-help-page" hidden>
+      <p>La forme de ces orbitales découle directement de la résolution de
+        l'équation de Schrödinger. À partir du deuxième niveau d'énergie, si l'on
+        cartographiait toutes les positions successives de l'électron, on verrait
+        apparaître des zones de probabilité élevée (très denses en points) et des
+        zones de probabilité nulle. Ces zones sont appelées des
+        <strong>« nœuds »</strong> : ce sont des surfaces géométriques où la
+        probabilité de trouver l'électron est strictement égale à zéro.
+        L'électron ne peut tout simplement jamais s'y trouver.</p>
+    </div>
+
+    <div class="dlg-nav">
+      <button type="button" class="btn-sec" id="q-help-prev">‹ Précédent</button>
+      <span class="dlg-count" id="q-help-count" aria-live="polite">Fenêtre 1 / 3</span>
+      <button type="button" class="btn-sec" id="q-help-next">Suivant ›</button>
+    </div>
+    <button type="button" class="btn-main" id="q-help-close">Fermer</button>
+  </div>
+</div>
 
 <script>
-// ── Paramètres d'accessibilité ────────────────────────────────────────────────
+// ══════════════════════════ Données des atomes ══════════════════════════
+const ATOMS = {
+  1: { sym:'H',    name:'Hydrogène',               compo:'1 proton et 1 électron',  config:'1s¹' },
+  2: { sym:'He⁺',  name:'Hélium ionisé une fois',  compo:'2 protons et 1 électron', config:'1s¹' },
+  3: { sym:'Li²⁺', name:'Lithium ionisé deux fois',compo:'3 protons et 1 électron', config:'1s¹' },
+};
+let selectedZ = 1;
+
+// ══════════════════════════ Navigation entre vues ══════════════════════════
+const VIEWS = ['home', 'classique', 'quantique'];
+let quantumStarted = false;
+
+function showView(name) {
+  VIEWS.forEach(v => { document.getElementById('view-' + v).hidden = (v !== name); });
+  if (name === 'quantique' && !quantumStarted) {
+    quantumStarted = true;
+    setTimeout(generate, 60); // laisse le canvas prendre sa taille
+  }
+  if (name === 'classique') classicalReset();
+}
+document.getElementById('go-classique').addEventListener('click', () => showView('classique'));
+document.getElementById('go-quantique').addEventListener('click', () => showView('quantique'));
+document.getElementById('cl-home-btn').addEventListener('click', () => showView('home'));
+document.getElementById('q-home-btn').addEventListener('click', () => showView('home'));
+
+// ══════════════════════════ Paramètres d'accessibilité ══════════════════════════
 const SETTINGS_KEY = 'orbitales-settings';
 const FS_MIN = 0.8, FS_MAX = 1.6, FS_STEP = 0.1;
 let settings = { a11y: true, fontScale: 1 };
@@ -448,7 +651,6 @@ function applySettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
 }
 
-// Ouverture / fermeture du panneau
 const btnSettings = document.getElementById('btn-settings');
 const settingsPanel = document.getElementById('settings');
 
@@ -464,9 +666,6 @@ function closeSettings() {
 }
 btnSettings.addEventListener('click', () => settingsPanel.hidden ? openSettings() : closeSettings());
 document.getElementById('settings-close').addEventListener('click', closeSettings);
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !settingsPanel.hidden) closeSettings();
-});
 
 document.getElementById('a11y-switch').addEventListener('click', () => {
   settings.a11y = !settings.a11y;
@@ -487,32 +686,284 @@ document.getElementById('fs-reset').addEventListener('click', () => {
 
 applySettings();
 
-// ── Fenêtre d'introduction ────────────────────────────────────────────────────
-const INTRO_KEY = 'orbitales-intro-hidden';
-const intro = document.getElementById('intro');
-const introSkip = document.getElementById('intro-skip');
+// ══════════════════════════ Dialogues d'aide ══════════════════════════
+function wireDialog(overlayId, openBtnId, closeBtnId) {
+  const overlay = document.getElementById(overlayId);
+  const openBtn = document.getElementById(openBtnId);
+  const closeBtn = document.getElementById(closeBtnId);
+  openBtn.addEventListener('click', () => { overlay.hidden = false; closeBtn.focus(); });
+  closeBtn.addEventListener('click', () => { overlay.hidden = true; openBtn.focus(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
+  return overlay;
+}
+const clHelp = wireDialog('cl-help', 'cl-help-btn', 'cl-help-close');
+const qHelp  = wireDialog('q-help',  'q-help-btn',  'q-help-close');
 
-function openIntro() {
-  introSkip.checked = localStorage.getItem(INTRO_KEY) === 'true';
-  intro.hidden = false;
-  document.getElementById('intro-close').focus();
-}
-function closeIntro() {
-  intro.hidden = true;
-  try { localStorage.setItem(INTRO_KEY, String(introSkip.checked)); } catch (e) {}
-}
-document.getElementById('intro-close').addEventListener('click', closeIntro);
-document.getElementById('btn-help').addEventListener('click', openIntro);
-intro.addEventListener('click', e => { if (e.target === intro) closeIntro(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !intro.hidden) closeIntro();
+  if (e.key !== 'Escape') return;
+  if (!clHelp.hidden) clHelp.hidden = true;
+  else if (!qHelp.hidden) qHelp.hidden = true;
+  else if (!settingsPanel.hidden) closeSettings();
 });
 
-let showIntro = true;
-try { showIntro = localStorage.getItem(INTRO_KEY) !== 'true'; } catch (e) {}
-if (showIntro) openIntro();
+// Aide quantique : 3 fenêtres
+let qHelpPage = 1;
+function qHelpShow(p) {
+  qHelpPage = Math.min(3, Math.max(1, p));
+  [1,2,3].forEach(i => document.getElementById('q-help-page-' + i).hidden = (i !== qHelpPage));
+  document.getElementById('q-help-count').textContent = `Fenêtre ${qHelpPage} / 3`;
+  document.getElementById('q-help-prev').disabled = qHelpPage === 1;
+  document.getElementById('q-help-next').disabled = qHelpPage === 3;
+}
+document.getElementById('q-help-prev').addEventListener('click', () => qHelpShow(qHelpPage - 1));
+document.getElementById('q-help-next').addEventListener('click', () => qHelpShow(qHelpPage + 1));
+document.getElementById('q-help-btn').addEventListener('click', () => qHelpShow(1));
+qHelpShow(1);
 
-// ── Three.js ──────────────────────────────────────────────────────────────────
+// ══════════════════════════ Sélecteurs d'atome (2 pages) ══════════════════════════
+function buildAtomCards(containerId, detailFn, idPrefix) {
+  const box = document.getElementById(containerId);
+  box.innerHTML = '';
+  [1, 2, 3].forEach(Z => {
+    const a = ATOMS[Z];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'atom-card';
+    b.id = idPrefix + Z;
+    b.setAttribute('aria-pressed', String(Z === selectedZ));
+    b.innerHTML = `
+      <span class="atom-symbol" aria-hidden="true">${a.sym}</span>
+      <span class="atom-info">
+        <span class="atom-name">${a.name}</span>
+        <span class="atom-Z">${detailFn(a)}</span>
+      </span>`;
+    b.addEventListener('click', () => selectIon(Z));
+    box.appendChild(b);
+  });
+}
+
+function refreshAtomCards() {
+  [1, 2, 3].forEach(Z => {
+    ['cl-ion-', 'ion-'].forEach(prefix => {
+      const el = document.getElementById(prefix + Z);
+      if (el) el.setAttribute('aria-pressed', String(Z === selectedZ));
+    });
+  });
+}
+
+function selectIon(Z) {
+  selectedZ = Z;
+  refreshAtomCards();
+  document.getElementById('badge').textContent = ATOMS[Z].sym;
+  classicalReset();
+  updateClassicalTitle();
+}
+
+buildAtomCards('cl-ion-btns', a => a.compo, 'cl-ion-');
+buildAtomCards('ion-btns', a => `Configuration électronique : ${a.config}`, 'ion-');
+
+// ══════════════════════════ MODÈLE CLASSIQUE (2D) ══════════════════════════
+// Port JavaScript des programmes rutherford.py et rutherford_limite.py
+// de Mme Pasquet (https://github.com/jpasquet/orbitale)
+const clCanvas = document.getElementById('cl-canvas');
+const clCtx = clCanvas.getContext('2d');
+const clTitle = document.getElementById('cl-title');
+const clReplay = document.getElementById('cl-replay');
+
+let clMode = 'newton';          // 'newton' | 'reel'
+let clFrame = 0;
+let clTraj = [];
+let clPhoton = null;            // {x,y,dx,dy,age,wl,color}
+let clCollapsed = false;
+
+function classicalReset() {
+  clFrame = 0;
+  clTraj = [];
+  clPhoton = null;
+  clCollapsed = false;
+  clReplay.classList.remove('visible');
+  updateClassicalTitle();
+}
+
+function updateClassicalTitle() {
+  clTitle.classList.remove('collapsed');
+  if (clMode === 'newton') {
+    clTitle.textContent = 'Modèle planétaire de Rutherford : ' + ATOMS[selectedZ].name;
+  } else if (clCollapsed) {
+    clTitle.textContent = "Effondrement total ! L'atome classique s'est écrasé.";
+    clTitle.classList.add('collapsed');
+  } else {
+    clTitle.textContent = "L'effondrement du modèle classique — " + ATOMS[selectedZ].sym;
+  }
+}
+
+function setClassicalMode(mode) {
+  clMode = mode;
+  document.getElementById('cl-mode-newton').setAttribute('aria-pressed', String(mode === 'newton'));
+  document.getElementById('cl-mode-reel').setAttribute('aria-pressed', String(mode === 'reel'));
+  document.getElementById('cl-legend-photon').style.display = mode === 'reel' ? 'flex' : 'none';
+  classicalReset();
+}
+document.getElementById('cl-mode-newton').addEventListener('click', () => setClassicalMode('newton'));
+document.getElementById('cl-mode-reel').addEventListener('click', () => setClassicalMode('reel'));
+clReplay.addEventListener('click', classicalReset);
+
+// Longueur d'onde (nm) → couleur CSS (spectre visible approché)
+function wlToColor(wl) {
+  let r = 0, g = 0, b = 0;
+  if (wl >= 380 && wl < 440)      { r = -(wl - 440) / 60; g = 0; b = 1; }
+  else if (wl < 490)              { r = 0; g = (wl - 440) / 50; b = 1; }
+  else if (wl < 510)              { r = 0; g = 1; b = -(wl - 510) / 20; }
+  else if (wl < 580)              { r = (wl - 510) / 70; g = 1; b = 0; }
+  else if (wl < 645)              { r = 1; g = -(wl - 645) / 65; b = 0; }
+  else                            { r = 1; g = 0; b = 0; }
+  let f = 1;
+  if (wl < 420) f = 0.3 + 0.7 * (wl - 380) / 40;
+  else if (wl > 700) f = 0.3 + 0.7 * (750 - wl) / 50;
+  const c = v => Math.round(Math.max(0, Math.min(1, v * f)) * 230);
+  return `rgb(${c(r)},${c(g)},${c(b)})`;
+}
+
+// Comme dans rutherford_limite.py : grand rayon → ~700 nm, petit rayon → ~400 nm
+function photonWavelength(rayon) {
+  const wl = 400 + (rayon - 0.1) / 0.9 * 300;
+  return Math.round(Math.max(380, Math.min(750, wl)));
+}
+
+function classicalStep() {
+  const wrap = clCanvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (w === 0 || h === 0) return;
+  if (clCanvas.width !== Math.round(w * dpr) || clCanvas.height !== Math.round(h * dpr)) {
+    clCanvas.width = Math.round(w * dpr);
+    clCanvas.height = Math.round(h * dpr);
+  }
+  const ctx = clCtx;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2, cy = h / 2;
+  const scale = Math.min(w, h) / 2 / 1.35;   // monde : rayon 1 = orbite
+  const X = v => cx + v * scale;
+  const Y = v => cy - v * scale;
+
+  // Grille légère
+  ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 5]);
+  for (let gx = -1; gx <= 1; gx += 0.5) {
+    ctx.beginPath(); ctx.moveTo(X(gx), Y(-1.3)); ctx.lineTo(X(gx), Y(1.3)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(-1.3), Y(gx)); ctx.lineTo(X(1.3), Y(gx)); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Vitesse angulaire : plus le noyau est chargé, plus l'électron tourne vite
+  const speed = Math.sqrt(selectedZ);
+  let ex, ey, rayon;
+
+  if (clMode === 'newton') {
+    // ── rutherford.py : orbite circulaire stable ──
+    rayon = 1;
+    const angle = clFrame * 0.05 * speed;
+    ex = Math.cos(angle); ey = Math.sin(angle);
+
+    // Orbite en pointillés bleus
+    ctx.strokeStyle = '#2b50c8';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.arc(X(0), Y(0), scale, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // ── rutherford_limite.py : spirale d'effondrement ──
+    const collapseRate = 0.012 * (1 + 0.6 * (selectedZ - 1)); // plus rapide si Z élevé
+    rayon = Math.exp(-collapseRate * clFrame);
+    const angle = clFrame * 0.15 * speed;
+
+    if (rayon < 0.05) {
+      rayon = 0.05;
+      if (!clCollapsed) {
+        clCollapsed = true;
+        clReplay.classList.add('visible');
+        updateClassicalTitle();
+      }
+    }
+    ex = rayon * Math.cos(angle);
+    ey = rayon * Math.sin(angle);
+
+    if (!clCollapsed) clTraj.push([ex, ey]);
+
+    // Trajectoire (spirale noire)
+    if (clTraj.length > 1) {
+      ctx.strokeStyle = 'rgba(30,30,30,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(X(clTraj[0][0]), Y(clTraj[0][1]));
+      for (let i = 1; i < clTraj.length; i++) ctx.lineTo(X(clTraj[i][0]), Y(clTraj[i][1]));
+      ctx.stroke();
+    }
+
+    // Émission d'un photon toutes les 25 frames
+    if (!clCollapsed && clFrame % 25 === 0 && clFrame > 0 && !clPhoton) {
+      const wl = photonWavelength(rayon);
+      const norme = Math.sqrt(ex * ex + ey * ey) || 1;
+      clPhoton = {
+        x: ex, y: ey,
+        dx: (ex / norme) * 0.04, dy: (ey / norme) * 0.04,
+        age: 0, wl, color: wlToColor(wl)
+      };
+    }
+    if (clPhoton) {
+      clPhoton.x += clPhoton.dx;
+      clPhoton.y += clPhoton.dy;
+      clPhoton.age++;
+      // Ondulation visuelle du photon
+      ctx.fillStyle = clPhoton.color;
+      ctx.beginPath();
+      ctx.arc(X(clPhoton.x), Y(clPhoton.y), 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.font = '600 13px "DM Mono", monospace';
+      ctx.fillText(clPhoton.wl + ' nm', X(clPhoton.x) + 10, Y(clPhoton.y) - 10);
+      if (clPhoton.age > 28 || Math.abs(clPhoton.x) > 1.35 || Math.abs(clPhoton.y) > 1.35) clPhoton = null;
+    }
+  }
+
+  // Noyau : autant de protons que Z
+  const nucleusR = 9 + 3 * selectedZ;
+  ctx.fillStyle = '#c0281c';
+  ctx.beginPath();
+  ctx.arc(X(0), Y(0), nucleusR, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 12px "DM Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+' + (selectedZ === 1 ? 'e' : selectedZ + 'e'), X(0), Y(0));
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+
+  // Électron
+  ctx.fillStyle = '#1a3fa0';
+  ctx.beginPath();
+  ctx.arc(X(ex), Y(ey), 7, 0, 2 * Math.PI);
+  ctx.fill();
+
+  if (!clCollapsed) clFrame++;
+}
+
+// Cadence calée sur les animations matplotlib de Mme Pasquet (interval = 30 ms)
+let clLastStep = 0;
+(function classicalLoop(now) {
+  requestAnimationFrame(classicalLoop);
+  if (document.getElementById('view-classique').hidden) return;
+  if (now - clLastStep < 30) return;
+  clLastStep = now;
+  classicalStep();
+})(0);
+
+// ══════════════════════════ MODÈLE QUANTIQUE (Three.js) ══════════════════════════
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -665,6 +1116,7 @@ const SPRITE_TEX = new THREE.CanvasTexture(_spriteCanvas);
 // Redimensionnement
 new ResizeObserver(() => {
   const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }).observe(canvas);
@@ -781,23 +1233,6 @@ function computeOrbital(N, Z, type) {
   return { x: xOut, y: yOut, z: zOut, r_norm, psi: psiOut, a0 };
 }
 
-// ── Sélection d'ion ───────────────────────────────────────────────────────────
-const IONS = {
-  1: { sym:'H',    label:'Hydrogène' },
-  2: { sym:'He⁺',  label:'Hélium ionisé' },
-  3: { sym:'Li²⁺', label:'Lithium doublement ionisé' },
-};
-let selectedZ = 1;
-
-function selectIon(Z) {
-  selectedZ = Z;
-  document.querySelectorAll('#ion-btns .atom-card').forEach(c => c.setAttribute('aria-pressed', 'false'));
-  const card = document.getElementById('ion-' + Z);
-  if (card) card.setAttribute('aria-pressed', 'true');
-  document.getElementById('badge').textContent = IONS[Z].sym;
-}
-[1, 2, 3].forEach(Z => document.getElementById('ion-' + Z).addEventListener('click', () => selectIon(Z)));
-
 // ── Coupe transversale ────────────────────────────────────────────────────────
 const btnCoupe = document.getElementById('btn-coupe');
 const coupeBlock = document.getElementById('coupe-block');
@@ -820,7 +1255,7 @@ coupeSlider.addEventListener('input', () => {
 
 // ── Sélecteur d'orbitales ─────────────────────────────────────────────────────
 let selectedOrbitals = new Set(['1s']);
-const ALL_ORB_TYPES = ['1s', '2s', '3s', '2pz', '2px', '2py'];
+const ALL_ORB_TYPES = ['1s', '2s', '3s', '2px', '2py', '2pz'];
 
 function buildOrbSelectTags() {
   const container = document.getElementById('orb-select-tags');
@@ -853,6 +1288,20 @@ function buildOrbSelectTags() {
   });
 }
 
+// ── Nombre de points : slider ↔ champ numérique synchronisés ─────────────────
+const nsSlider = document.getElementById('ns');
+const nsNum = document.getElementById('ns-num');
+
+function setPointCount(v) {
+  v = Math.round(v / 100) * 100;
+  v = Math.max(200, Math.min(8000, v));
+  nsSlider.value = v;
+  nsNum.value = v;
+  document.getElementById('nv').textContent = v.toLocaleString('fr');
+}
+nsSlider.addEventListener('input', () => setPointCount(+nsSlider.value));
+nsNum.addEventListener('change', () => setPointCount(+nsNum.value || 200));
+
 // ── Génération ────────────────────────────────────────────────────────────────
 async function generate() {
   const err = document.getElementById('err');
@@ -865,7 +1314,7 @@ async function generate() {
   const loaderTxt = document.getElementById('loader-txt');
   loader.classList.remove('hidden');
 
-  const N = parseInt(document.getElementById('ns').value, 10);
+  const N = parseInt(nsSlider.value, 10);
   const t0 = performance.now();
 
   try {
@@ -905,7 +1354,7 @@ async function generate() {
     document.getElementById('sb').style.display = 'block';
 
     const badge = document.getElementById('badge');
-    badge.textContent = IONS[selectedZ] ? IONS[selectedZ].sym : '';
+    badge.textContent = ATOMS[selectedZ] ? ATOMS[selectedZ].sym : '';
     badge.style.display = 'block';
     btnCoupe.disabled = false;
     loaderTxt.textContent = `Terminé : ${totalPoints.toLocaleString('fr')} points en ${ms} ms.`;
@@ -919,15 +1368,13 @@ async function generate() {
   }
 }
 
-document.getElementById('ns').addEventListener('input', () => {
-  document.getElementById('nv').textContent = (+document.getElementById('ns').value).toLocaleString('fr');
-});
 document.getElementById('btn').addEventListener('click', generate);
 
 // ── Initialisation ────────────────────────────────────────────────────────────
-selectIon(1);
+refreshAtomCards();
 buildOrbSelectTags();
-generate(); // affiche l'orbitale 1s dès l'ouverture
+setClassicalMode('newton');
+showView('home');
 </script>
 </body>
 </html>
