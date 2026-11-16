@@ -58,35 +58,34 @@ body { height:100vh; overflow:hidden; }
 .math { font-family:var(--f-serif); font-style:italic; }
 
 /* ── Page d'accueil ───────────────────────────────────────────── */
-#view-home { overflow-y:auto; display:flex; align-items:center; justify-content:center; padding:40px 32px; }
-.home-wrap {
-  width:100%; max-width:1040px;
-  display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, .9fr); gap:56px; align-items:center;
+#view-home {
+  position:relative; overflow-y:auto;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px 24px; text-align:center;
 }
-.home-meta { font-size:.95rem; color:var(--sub); margin-bottom:22px; }
-.home-title { font-family:var(--f-serif); font-weight:600; font-size:4.2rem; line-height:1; letter-spacing:-.01em; }
-.home-sub { font-family:var(--f-serif); font-style:italic; font-size:1.35rem; color:var(--sub); margin-top:10px; }
-.home-intro { font-size:1.08rem; line-height:1.6; margin-top:26px; max-width:34em; }
-.home-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:30px; }
+.home-atom { position:absolute; top:22px; right:26px; width:96px; height:96px; }
+.home-title { font-family:var(--f-serif); font-weight:600; font-size:4.6rem; line-height:1; letter-spacing:-.01em; }
+.home-sub { font-family:var(--f-serif); font-style:italic; font-size:1.7rem; color:var(--ink); margin-top:12px; }
+.home-credit { font-size:1.05rem; color:var(--sub); margin-top:14px; line-height:1.6; }
+.home-choose { font-size:1.15rem; font-weight:600; margin-top:56px; }
+.home-cards { display:grid; grid-template-columns:repeat(2, 240px); gap:18px; margin-top:16px; }
 .home-card {
-  display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left;
-  padding:18px 18px 16px; border:var(--border-w) solid var(--line); border-radius:6px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:22px 18px 18px; border:var(--border-w) solid var(--line); border-radius:6px;
   background:var(--panel); color:var(--ink); cursor:pointer; font-family:inherit;
   transition:border-color .15s, background .15s;
 }
 .home-card:hover { border-color:var(--accent); background:var(--raise); }
-.home-card svg { margin-bottom:8px; }
+.home-card svg { margin-bottom:10px; }
 .card-name { font-family:var(--f-serif); font-weight:600; font-size:1.3rem; }
 .card-desc { font-size:.95rem; color:var(--sub); }
-.card-eq { font-family:var(--f-serif); font-style:italic; font-size:1.05rem; margin-top:8px; }
-.home-credit { font-size:.92rem; color:var(--sub); margin-top:28px; line-height:1.6; }
-.home-atom { width:100%; height:auto; }
-@media (max-width: 860px) {
-  .home-wrap { grid-template-columns:minmax(0, 1fr); gap:28px; }
-  .home-atom { max-width:320px; justify-self:center; order:-1; }
+@media (max-width: 620px) {
+  #view-home { padding-top:120px; }
+  .home-atom { width:72px; height:72px; }
   .home-title { font-size:3.2rem; }
+  .home-sub { font-size:1.35rem; }
+  .home-cards { grid-template-columns:minmax(0, 280px); }
 }
-@media (max-width: 520px) { .home-cards { grid-template-columns:1fr; } }
 
 /* ── Pages de simulation (grille sidebar + zone) ──────────────── */
 .sim-page { display:grid; grid-template-columns:var(--sidebar) 1fr; height:100vh; overflow:hidden; }
@@ -232,16 +231,35 @@ main { position:relative; overflow:hidden; }
   display:flex; align-items:center; gap:7px;
 }
 .float-btn:hover { border-color:var(--accent); }
-.btn-help { top:14px; right:14px; min-width:var(--btn-minh); justify-content:center; border-radius:50%; aspect-ratio:1; padding:0; }
-.btn-help .qmark { font-family:var(--f-serif); font-size:1.35rem; font-weight:600; line-height:1; }
-#btn-settings { top:14px; right:calc(24px + var(--btn-minh)); }
+/* Boutons en haut à droite, alignés sans se chevaucher */
+.top-actions { position:absolute; top:12px; right:14px; z-index:5; display:flex; align-items:flex-start; gap:10px; }
+.top-actions .float-btn { position:static; }
+
+/* Bouton d'aide : bien visible, il clignote tant qu'on ne l'a pas ouvert */
+.btn-help {
+  flex-direction:column; justify-content:center; gap:6px;
+  padding:10px 16px; border-color:#d64533;
+}
+.btn-help .qmark {
+  width:2.2rem; height:2.2rem; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:#d64533; color:#fff;
+  font-family:var(--f-serif); font-size:1.5rem; font-weight:600; line-height:1;
+}
+.btn-help .help-label { font-size:.95rem; font-weight:600; }
+.btn-help:hover { border-color:#ff6a55; }
+.btn-help:not(.seen) { animation:help-blink 1.4s ease-in-out infinite; }
+@keyframes help-blink {
+  0%, 100% { box-shadow:0 0 0 0 rgba(214,69,51,0); }
+  50%      { box-shadow:0 0 0 7px rgba(214,69,51,.45); }
+}
 .btn-home { bottom:14px; right:14px; }
 
 /* ── Page modèle classique ── */
 #cl-main { position:relative; display:flex; flex-direction:column; overflow:hidden; }
 .cl-topbar {
   display:flex; gap:8px; align-items:center; justify-content:center;
-  padding:14px 90px 14px 20px; border-bottom:var(--border-w) solid var(--line);
+  padding:14px 200px 14px 20px; border-bottom:var(--border-w) solid var(--line);
   flex-wrap:wrap;
 }
 .cl-topbar .btn-sec { width:auto; }
@@ -349,57 +367,47 @@ main { position:relative; overflow:hidden; }
 
 <!-- ════════════════════════ PAGE D'ACCUEIL ════════════════════════ -->
 <div class="view" id="view-home">
-  <div class="home-wrap">
-    <div class="home-text">
-      <p class="home-meta">Seconde générale · Thème 1, chapitre 6 · Activité 5</p>
-      <h1 class="home-title">Orbitale</h1>
-      <p class="home-sub">Logiciel de simulation d'orbitales atomiques</p>
-      <p class="home-intro">Le modèle planétaire de Rutherford, puis le nuage électronique de
-        la mécanique quantique, simulés pour trois atomes hydrogénoïdes&nbsp;:
-        H, He⁺ et Li²⁺.</p>
+  <svg class="home-atom" viewBox="-200 -200 400 400" role="img" aria-label="Logo Orbitale : un noyau et des électrons en orbite">
+    <defs>
+      <path id="orb" d="M180,0 A180,62 0 1,1 -180,0 A180,62 0 1,1 180,0"/>
+    </defs>
+    <g fill="none" stroke="#5a616d" stroke-width="6">
+      <use href="#orb"/>
+      <use href="#orb" transform="rotate(60)"/>
+      <use href="#orb" transform="rotate(-60)"/>
+    </g>
+    <g fill="#8ab4ff">
+      <circle r="18"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle>
+      <g transform="rotate(60)"><circle r="18"><animateMotion dur="11s" begin="-4s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle></g>
+      <g transform="rotate(-60)"><circle r="18"><animateMotion dur="10s" begin="-7s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle></g>
+    </g>
+    <circle r="34" fill="#f08a3c"/>
+  </svg>
 
-      <div class="home-cards">
-        <button type="button" class="home-card" id="go-classique">
-          <svg width="64" height="36" viewBox="-32 -18 64 36" aria-hidden="true">
-            <ellipse rx="29" ry="12" fill="none" stroke="#6b7280" stroke-width="1.2"/>
-            <circle r="5" fill="#f08a3c"/>
-            <circle cx="24" cy="-7" r="3" fill="#8ab4ff"/>
-          </svg>
-          <span class="card-name">Modèle classique</span>
-          <span class="card-desc">Rutherford, 1911</span>
-          <span class="card-eq">F = k Ze² / r²</span>
-        </button>
-        <button type="button" class="home-card" id="go-quantique">
-          <svg width="64" height="36" viewBox="-32 -18 64 36" aria-hidden="true">
-            <ellipse cx="-13" rx="13" ry="9" fill="#e16462" opacity=".75"/>
-            <ellipse cx="13" rx="13" ry="9" fill="#8ab4ff" opacity=".75"/>
-            <circle r="2" fill="#e7e5e0"/>
-          </svg>
-          <span class="card-name">Modèle quantique</span>
-          <span class="card-desc">Schrödinger, 1926</span>
-          <span class="card-eq">Ĥψ = Eψ</span>
-        </button>
-      </div>
+  <h1 class="home-title">Orbitale</h1>
+  <p class="home-sub">Logiciel de simulation d'orbitales atomiques</p>
+  <p class="home-credit">Réalisé par William Darnaud, Théo de la Chapelle et Samuel Soliman.</p>
 
-      <p class="home-credit">Réalisé par William Darnaud, Théo de la Chapelle et Samuel Soliman.</p>
-    </div>
-
-    <svg class="home-atom" viewBox="-200 -200 400 400" role="img" aria-label="Schéma d'un atome : un noyau et des électrons en orbite">
-      <defs>
-        <path id="orb" d="M180,0 A180,62 0 1,1 -180,0 A180,62 0 1,1 180,0"/>
-      </defs>
-      <g fill="none" stroke="#3d434d" stroke-width="1.2">
-        <use href="#orb"/>
-        <use href="#orb" transform="rotate(60)"/>
-        <use href="#orb" transform="rotate(-60)"/>
-      </g>
-      <g fill="#8ab4ff">
-        <circle r="6"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle>
-        <g transform="rotate(60)"><circle r="6"><animateMotion dur="11s" begin="-4s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle></g>
-        <g transform="rotate(-60)"><circle r="6"><animateMotion dur="10s" begin="-7s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle></g>
-      </g>
-      <circle r="16" fill="#f08a3c"/>
-    </svg>
+  <p class="home-choose" id="home-choose">Choisissez le modèle :</p>
+  <div class="home-cards" role="group" aria-labelledby="home-choose">
+    <button type="button" class="home-card" id="go-classique">
+      <svg width="64" height="36" viewBox="-32 -18 64 36" aria-hidden="true">
+        <ellipse rx="29" ry="12" fill="none" stroke="#6b7280" stroke-width="1.2"/>
+        <circle r="5" fill="#f08a3c"/>
+        <circle cx="24" cy="-7" r="3" fill="#8ab4ff"/>
+      </svg>
+      <span class="card-name">Modèle classique</span>
+      <span class="card-desc">Rutherford, 1911</span>
+    </button>
+    <button type="button" class="home-card" id="go-quantique">
+      <svg width="64" height="36" viewBox="-32 -18 64 36" aria-hidden="true">
+        <ellipse cx="-13" rx="13" ry="9" fill="#e16462" opacity=".75"/>
+        <ellipse cx="13" rx="13" ry="9" fill="#8ab4ff" opacity=".75"/>
+        <circle r="2" fill="#e7e5e0"/>
+      </svg>
+      <span class="card-name">Modèle quantique</span>
+      <span class="card-desc">Schrödinger, 1926</span>
+    </button>
   </div>
 </div>
 
@@ -447,10 +455,12 @@ main { position:relative; overflow:hidden; }
       <button type="button" class="btn-main" id="cl-replay">Rejouer l'animation</button>
     </div>
 
-    <button type="button" class="float-btn btn-help" id="cl-help-btn" aria-haspopup="dialog"
-            aria-label="Aide : pourquoi l'électron s'effondre-t-il ?">
-      <span class="qmark" aria-hidden="true">?</span>
-    </button>
+    <div class="top-actions">
+      <button type="button" class="float-btn btn-help" id="cl-help-btn" aria-haspopup="dialog">
+        <span class="qmark" aria-hidden="true">?</span>
+        <span class="help-label">Je veux comprendre</span>
+      </button>
+    </div>
     <button type="button" class="float-btn btn-home" id="cl-home-btn">
       <span aria-hidden="true">⌂</span> accueil
     </button>
@@ -485,8 +495,10 @@ main { position:relative; overflow:hidden; }
   <section class="block">
     <span class="lbl" id="lbl-orb">Orbitales affichées</span>
     <div class="orb-tags" id="orb-select-tags" role="group" aria-labelledby="lbl-orb"></div>
-    <p class="note">Ces systèmes n'ont qu'un seul électron : toutes ces orbitales lui sont
-      accessibles. Au fondamental il occupe 1s ; les autres sont des états excités.</p>
+    <p class="note">Les atomes hydrogénoïdes n'ont qu'un seul électron. À l'état fondamental
+      (le plus bas en énergie), il occupe l'orbitale 1s. S'il reçoit suffisamment
+      d'énergie, il devient excité et peut occuper une orbitale de niveau d'énergie
+      plus élevé (2s, 3s ou 2p).</p>
   </section>
 
   <!-- Nombre de points -->
@@ -551,13 +563,15 @@ main { position:relative; overflow:hidden; }
   <div class="hint" aria-hidden="true">glisser : rotation · molette : zoom · flèches / + − : clavier</div>
   <div class="badge" id="badge" aria-hidden="true"></div>
 
-  <button type="button" class="float-btn btn-help" id="q-help-btn" aria-haspopup="dialog"
-          aria-label="Aide : comprendre le modèle quantique">
-    <span class="qmark" aria-hidden="true">?</span>
-  </button>
-  <button type="button" class="float-btn" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
-    <span aria-hidden="true">⚙</span> Paramètres
-  </button>
+  <div class="top-actions">
+    <button type="button" class="float-btn" id="btn-settings" aria-haspopup="dialog" aria-expanded="false">
+      <span aria-hidden="true">⚙</span> Paramètres
+    </button>
+    <button type="button" class="float-btn btn-help" id="q-help-btn" aria-haspopup="dialog">
+      <span class="qmark" aria-hidden="true">?</span>
+      <span class="help-label">Je veux comprendre</span>
+    </button>
+  </div>
   <button type="button" class="float-btn btn-home" id="q-home-btn">
     <span aria-hidden="true">⌂</span> accueil
   </button>
@@ -594,14 +608,21 @@ main { position:relative; overflow:hidden; }
 <!-- ════════════ Dialogue d'aide : modèle classique ════════════ -->
 <div class="overlay" id="cl-help" role="dialog" aria-modal="true" aria-labelledby="cl-help-title" hidden>
   <div class="dlg-card">
-    <h2 id="cl-help-title">Pourquoi l'atome classique s'effondre-t-il ?</h2>
-    <p>Selon les équations de Maxwell et la loi de Larmor, toute particule chargée
-      et accélérée doit émettre des ondes électromagnétiques. En rayonnant,
-      l'électron perdrait continuellement de son énergie cinétique. Privé
-      d'énergie, l'électron décrirait une spirale et s'écraserait sur le noyau
-      positif en environ une nanoseconde, ce qui contredit la stabilité de la
-      matière.</p>
-    <div class="dlg-eq">P = q² a² / (6π ε₀ c³)<small>Formule de Larmor : puissance rayonnée par une charge accélérée</small></div>
+    <h2 id="cl-help-title">Le modèle planétaire</h2>
+    <div id="cl-help-newton">
+      <p>Dans ce modèle, l'électron chargé négativement orbite autour du noyau
+        chargé positivement, comme les planètes orbitent autour du Soleil.
+        L'électron forme alors une trajectoire circulaire.</p>
+    </div>
+    <div id="cl-help-reel" hidden>
+      <p>Selon les équations de Maxwell et la loi de Larmor, toute particule chargée
+        et accélérée doit émettre des ondes électromagnétiques. En rayonnant,
+        l'électron perdrait continuellement de son énergie cinétique. Privé
+        d'énergie, l'électron décrirait une spirale et s'écraserait sur le noyau
+        positif en environ une nanoseconde, ce qui contredit la stabilité de la
+        matière.</p>
+      <div class="dlg-eq">P = q² a² / (6π ε₀ c³)<small>Formule de Larmor : puissance rayonnée par une charge accélérée</small></div>
+    </div>
     <button type="button" class="btn-main" id="cl-help-close">J'ai compris</button>
   </div>
 </div>
@@ -752,7 +773,11 @@ function wireDialog(overlayId, openBtnId, closeBtnId) {
   const overlay = document.getElementById(overlayId);
   const openBtn = document.getElementById(openBtnId);
   const closeBtn = document.getElementById(closeBtnId);
-  openBtn.addEventListener('click', () => { overlay.hidden = false; closeBtn.focus(); });
+  openBtn.addEventListener('click', () => {
+    openBtn.classList.add('seen');   // arrête le clignotement une fois l'aide ouverte
+    overlay.hidden = false;
+    closeBtn.focus();
+  });
   closeBtn.addEventListener('click', () => { overlay.hidden = true; openBtn.focus(); });
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
   return overlay;
@@ -868,7 +893,8 @@ function updateClassicalTitle() {
   if (clMode === 'newton') {
     clTitle.textContent = 'Modèle planétaire de Rutherford : ' + ATOMS[selectedZ].name;
   } else if (clCollapsed) {
-    clTitle.textContent = "Effondrement total ! L'atome classique s'est écrasé.";
+    clTitle.textContent = "Effondrement de l'électron sur le noyau de l'atome ! "
+      + "La théorie classique ne permet pas d'expliquer la cohésion de la matière.";
     clTitle.classList.add('collapsed');
   } else {
     clTitle.textContent = "L'effondrement du modèle classique — " + ATOMS[selectedZ].sym;
@@ -880,6 +906,12 @@ function setClassicalMode(mode) {
   document.getElementById('cl-mode-newton').setAttribute('aria-pressed', String(mode === 'newton'));
   document.getElementById('cl-mode-reel').setAttribute('aria-pressed', String(mode === 'reel'));
   document.getElementById('cl-legend-photon').style.display = mode === 'reel' ? 'flex' : 'none';
+  // L'aide explique le modèle affiché
+  document.getElementById('cl-help-newton').hidden = mode !== 'newton';
+  document.getElementById('cl-help-reel').hidden = mode !== 'reel';
+  document.getElementById('cl-help-title').textContent = mode === 'newton'
+    ? 'Le modèle planétaire'
+    : "Pourquoi l'atome classique s'effondre-t-il ?";
   classicalReset();
 }
 document.getElementById('cl-mode-newton').addEventListener('click', () => setClassicalMode('newton'));
@@ -961,14 +993,13 @@ function classicalStep() {
   ctx.fillText('y', X(0) + 8, Y(1.3) + 10);
   ctx.fillText('r₁', X(1) + 4, Y(0) + 18);
 
-  // Vitesse angulaire : plus le noyau est chargé, plus l'électron tourne vite
-  const speed = Math.sqrt(selectedZ);
+  // Même vitesse pour H, He⁺ et Li²⁺, volontairement lente pour être observable
   let ex, ey, rayon;
 
   if (clMode === 'newton') {
     // ── rutherford.py : orbite circulaire stable ──
     rayon = 1;
-    const angle = clFrame * 0.05 * speed;
+    const angle = clFrame * 0.035;
     ex = Math.cos(angle); ey = Math.sin(angle);
 
     ctx.strokeStyle = '#6b7280';
@@ -981,9 +1012,8 @@ function classicalStep() {
     setClassicalReadout(1, null);
   } else {
     // ── rutherford_limite.py : spirale d'effondrement ──
-    const collapseRate = 0.012 * (1 + 0.6 * (selectedZ - 1)); // plus rapide si Z élevé
-    rayon = Math.exp(-collapseRate * clFrame);
-    const angle = clFrame * 0.15 * speed;
+    rayon = Math.exp(-0.009 * clFrame);
+    const angle = clFrame * 0.11;
 
     if (rayon < 0.05) {
       rayon = 0.05;
