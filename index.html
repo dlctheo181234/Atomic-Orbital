@@ -1119,6 +1119,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, 1, 1e-13, 1e-7);
 const R_MIN = 3e-11, R_MAX = 5e-8; // bornes de zoom (évite de sortir des plans near/far)
 let sph = { theta: 0.5, phi: 1.1, r: 4e-10 };
+let lastFit = null;   // cadrage appliqué à la dernière génération
 function camUpdate() {
   camera.position.set(
     sph.r * Math.sin(sph.phi) * Math.sin(sph.theta),
@@ -1309,9 +1310,17 @@ canvas.addEventListener('keydown', e => {
 // ── Équations des orbitales (portées depuis orbitale.py) ──────────────────────
 const a0 = 5.29e-11;
 
+// Largeur du tirage des points, comme dans orbitale.py de Mme Pasquet :
+// assez large pour la 3s afin de voir son 2e nœud (à 7,10 a0/Z).
+function samplingSigma(type, Z) {
+  if (type.startsWith('3')) return 3.0 * a0 / Z;
+  if (type.startsWith('2')) return 1.2 * a0 / Z;
+  return 0.8 * a0 / Z;
+}
+
 // Même logique que Probap() dans le Python
 function computeOrbital(N, Z, type) {
-  // Génération points gaussiens centrés sur 0, std = a0
+  // Génération points gaussiens centrés sur 0
   const randn = () => {
     let u = 0, v = 0;
     while(u === 0) u = Math.random();
@@ -1319,13 +1328,14 @@ function computeOrbital(N, Z, type) {
     return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
   };
 
+  const sigma = samplingSigma(type, Z);
   const xArr = new Float64Array(N);
   const yArr = new Float64Array(N);
   const zArr2 = new Float64Array(N);
   for (let i = 0; i < N; i++) {
-    xArr[i] = randn() * a0;
-    yArr[i] = randn() * a0;
-    zArr2[i] = randn() * a0;
+    xArr[i] = randn() * sigma;
+    yArr[i] = randn() * sigma;
+    zArr2[i] = randn() * sigma;
   }
 
   const psiArr = new Float64Array(N);
@@ -1491,6 +1501,11 @@ async function generate() {
     coupeSlider.value = 0;
     coupeZ = 0;
     document.getElementById('coupe-val').textContent = '0.0';
+
+    // Recadre la vue pour que tout le nuage soit visible (2e nœud de la 3s compris).
+    // Le cadrage ne dépend pas de Z : on doit voir que le nuage de He⁺ ou Li²⁺ est plus petit.
+    const fit = 7 * Math.max(...orbitals.map(t => samplingSigma(t, 1)));
+    if (fit !== lastFit) { lastFit = fit; sph.r = fit; camUpdate(); }
 
     renderAll();
 

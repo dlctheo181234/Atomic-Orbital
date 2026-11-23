@@ -7,15 +7,21 @@ import numpy as np
 
 
 a0 = 5.29*10**-11
-r_max = 5 * a0    
+r_max = 7 * a0
 
 
- 
+
 
 def Probap(N, Z, a0, type="2pz"):
-    x = np.random.normal(0, a0, N)
-    y = np.random.normal(0, a0, N)
-    z = np.random.normal(0, a0, N)
+    if type.startswith("3"):
+        sigma = 3.0 * a0 / Z  # Couvre jusqu'à ~12 a0/Z (2e nœud à 7.10)
+    elif type.startswith("2"):
+        sigma = 1.2 * a0 / Z  # Réduit la couche bleue externe pour mieux voir le cœur rouge (nœud à 2.00)
+    else:
+        sigma = 0.8 * a0 / Z  # Pour la 1s
+    x = np.random.normal(0,sigma, N)
+    y = np.random.normal(0, sigma, N)
+    z = np.random.normal(0, sigma, N)
 
     r = np.sqrt(x**2 + y**2 + z**2)
 
@@ -49,7 +55,7 @@ def Probap(N, Z, a0, type="2pz"):
     return x[filtre],y[filtre],z[filtre]   ,proba[filtre], psi[filtre]
 
 
-liste = ["1s", "2s", "2pz", "2px", "2py"]
+liste = ["1s","2s","3s","2px","2py","2pz"]
 
 for name in liste:
     X, Y, Z, proba,psi= Probap(100000, Z=1, a0=a0, type=name)
@@ -60,8 +66,8 @@ for name in liste:
     pos = (psi > 0) & (proba > threshold)
     neg = (psi < 0) & (proba > threshold)
 
-    ax.scatter(X[pos]/a0, Y[pos]/a0, Z[pos]/a0, c='red', s=6, alpha=0.6, label='psi > 0')
-    ax.scatter(X[neg]/a0, Y[neg]/a0, Z[neg]/a0, c='blue', s=6, alpha=0.6, label='psi < 0')
+    ax.scatter(X[pos]/a0, Y[pos]/a0, Z[pos]/a0, c='red', s=6, alpha=0.06, label='psi > 0')
+    ax.scatter(X[neg]/a0, Y[neg]/a0, Z[neg]/a0, c='blue', s=6, alpha=0.06, label='psi < 0')
 
     ax.set_xlabel('x / a0')
     ax.set_ylabel('y / a0')
