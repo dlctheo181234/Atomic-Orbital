@@ -1,0 +1,4 @@
+# Fichiers locaux, à ne pas publier sur GitHub
+.claude/
+deploy/
+Nouvelles instructions/
