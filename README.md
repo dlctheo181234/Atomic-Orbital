@@ -1,7 +1,8 @@
 # Atomic-Orbital — « Orbitale »
 
 Logiciel de simulation d'orbitales atomiques (systèmes hydrogénoïdes : H, He⁺, Li²⁺),
-réalisé par William Darnaud, Théo de la Chapelle et Samuel Soliman.
+réalisé par William Darnaud, Théo de la Chapelle et Samuel Soliman,
+avec l'aide de notre professeure, Mme Johanna Pasquet.
 
 Support de l'activité 5 « Mais où est passé l'électron ? » (Seconde générale, Mme Pasquet).
 
